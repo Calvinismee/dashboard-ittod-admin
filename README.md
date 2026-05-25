@@ -25,7 +25,7 @@ Ikuti langkah-langkah berikut untuk menginisialisasi dan menjalankan proyek di k
 
 ```bash
 # 1. Clone repository dari GitHub Organisasi
-git clone [https://github.com/pusdatin-ittoday/dashboard-ittod-admin.git](https://github.com/pusdatin-ittoday/dashboard-ittod-admin.git)
+git clone https://github.com/pusdatin-ittoday/dashboard-ittod-admin.git
 
 # Masuk ke direktori proyek
 cd dashboard-ittod-admin
