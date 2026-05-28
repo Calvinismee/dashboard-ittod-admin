@@ -2,48 +2,76 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class User extends Authenticatable
+class User extends Model
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, HasUuids;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    protected $table = 'user';
+
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
-        'name',
+        'id',
         'email',
-        'password',
+        'full_name',
+        'birth_date',
+        'pendidikan',
+        'nama_sekolah',
+        'entry_source',
+        'phone_number',
+        'id_line',
+        'id_discord',
+        'id_instagram',
+        'is_registration_complete',
+        'jenis_kelamin',
+        'ktm_key',
+        'twibbon_key',
+    ];
+
+    protected $casts = [
+        'birth_date' => 'datetime',
+        'is_registration_complete' => 'boolean',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
+     * Get the identity associated with the user.
      */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    public function identity(): HasOne
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasOne(UserIdentity::class, 'id', 'id');
+    }
+
+    /**
+     * Get the media uploaded by the user.
+     */
+    public function media(): HasMany
+    {
+        return $this->hasMany(Media::class, 'uploader_id', 'id');
+    }
+
+    /**
+     * The teams that this user belongs to.
+     */
+    public function teams(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class, 'team_member', 'user_id', 'team_id')
+                    ->withPivot('role', 'verification_error', 'kartu_id');
+    }
+
+    /**
+     * The events that this user is registered for as an individual.
+     */
+    public function events(): BelongsToMany
+    {
+        return $this->belongsToMany(Event::class, 'event_participant', 'user_id', 'event_id')
+                    ->withPivot('date_added', 'payment_proof', 'payment_verification');
     }
 }
