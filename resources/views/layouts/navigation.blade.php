@@ -15,6 +15,14 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
+                        <x-nav-link :href="route('operation.teams.index')" :active="request()->routeIs('operation.teams.*')">
+                            {{ __('Manajemen Tim') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('timeline.index')" :active="request()->routeIs('timeline.*')">
+                            {{ __('Lini Masa Kompetisi') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -70,6 +78,14 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+            @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
+                <x-responsive-nav-link :href="route('operation.teams.index')" :active="request()->routeIs('operation.teams.*')">
+                    {{ __('Manajemen Tim') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('timeline.index')" :active="request()->routeIs('timeline.*')">
+                    {{ __('Lini Masa Kompetisi') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->
