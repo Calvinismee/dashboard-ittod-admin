@@ -78,6 +78,14 @@ class UserIdentity extends Authenticatable
     }
 
     /**
+     * Accessor for name property.
+     */
+    public function getNameAttribute(): string
+    {
+        return $this->user ? $this->user->full_name : $this->email;
+    }
+
+    /**
      * The events that this staff is assigned to manage.
      */
     public function events(): BelongsToMany
