@@ -18,9 +18,6 @@
                     <x-nav-link :href="route('admin.staff.index')" :active="request()->routeIs('admin.staff.*')">
                         {{ __('Manajemen Staff') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('admin.transactions.index')" :active="request()->routeIs('admin.transactions.*')">
-                        {{ __('Verifikasi Transaksi') }}
-                    </x-nav-link>
                     <x-nav-link :href="route('admin.files-participants.index')" :active="request()->routeIs('admin.files-participants.*')">
                         {{ __('Berkas & Peserta') }}
                     </x-nav-link>
@@ -29,10 +26,10 @@
                     </x-nav-link>
                     @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
                         <x-nav-link :href="route('operation.teams.index')" :active="request()->routeIs('operation.teams.*')">
-                            {{ __('Manajemen Tim') }}
+                            {{ __('Verifikasi Transaksi') }}
                         </x-nav-link>
                         <x-nav-link :href="route('timeline.index')" :active="request()->routeIs('timeline.*')">
-                            {{ __('Lini Masa Kompetisi') }}
+                            {{ __('Lini Masa Kegiatan') }}
                         </x-nav-link>
                     @endif
                 </div>
@@ -93,9 +90,6 @@
             <x-responsive-nav-link :href="route('admin.staff.index')" :active="request()->routeIs('admin.staff.*')">
                 {{ __('Manajemen Staff') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('admin.transactions.index')" :active="request()->routeIs('admin.transactions.*')">
-                {{ __('Verifikasi Transaksi') }}
-            </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('admin.files-participants.index')" :active="request()->routeIs('admin.files-participants.*')">
                 {{ __('Berkas & Peserta') }}
             </x-responsive-nav-link>
@@ -104,10 +98,10 @@
             </x-responsive-nav-link>
             @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
                 <x-responsive-nav-link :href="route('operation.teams.index')" :active="request()->routeIs('operation.teams.*')">
-                    {{ __('Manajemen Tim') }}
+                    {{ __('Verifikasi Transaksi') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('timeline.index')" :active="request()->routeIs('timeline.*')">
-                    {{ __('Lini Masa Kompetisi') }}
+                    {{ __('Lini Masa Kegiatan') }}
                 </x-responsive-nav-link>
             @endif
         </div>

@@ -7,11 +7,15 @@ use App\Models\Event;
 use App\Models\EventTimeline;
 use App\Models\Media;
 use App\Models\Team;
+use App\Models\User;
 use App\Models\UserIdentity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class AdminDashboardController extends Controller
@@ -34,7 +38,7 @@ class AdminDashboardController extends Controller
 
     public function staff(): View
     {
-        abort_unless(auth()->user()?->role === 'superadmin', 403);
+        abort_unless($this->isAdminStaff(), 403);
 
         return view('admin.staff.index', [
             'staffAccounts' => UserIdentity::with(['user', 'events'])
@@ -42,8 +46,120 @@ class AdminDashboardController extends Controller
                 ->orderBy('role')
                 ->orderBy('email')
                 ->get(),
-            'events' => Event::orderBy('title')->get(),
+            'events' => Event::where('type', 'competition')->orderBy('title')->get(),
+            'canManageStaff' => auth()->user()?->role === 'superadmin',
         ]);
+    }
+
+    public function storeStaff(Request $request): RedirectResponse
+    {
+        $this->ensureSuperadmin();
+
+        $validated = $request->validate([
+            'full_name' => ['required', 'string', 'max:191'],
+            'email' => ['required', 'email', 'max:191', 'unique:user,email', 'unique:user_identity,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'role' => ['required', Rule::in(['superadmin', 'admin_keuangan', 'panitia'])],
+            'event_ids' => ['array'],
+            'event_ids.*' => [
+                'string',
+                Rule::exists('event', 'id')->where(fn ($query) => $query->where('type', 'competition')),
+            ],
+        ]);
+
+        DB::transaction(function () use ($validated, $request) {
+            $id = (string) Str::uuid();
+
+            User::create([
+                'id' => $id,
+                'email' => $validated['email'],
+                'full_name' => $validated['full_name'],
+                'is_registration_complete' => true,
+            ]);
+
+            $staff = UserIdentity::create([
+                'id' => $id,
+                'email' => $validated['email'],
+                'provider' => 'basic',
+                'hash' => Hash::make($validated['password']),
+                'is_verified' => $request->boolean('is_verified'),
+                'role' => $validated['role'],
+            ]);
+
+            $staff->events()->sync($validated['event_ids'] ?? []);
+        });
+
+        return back()->with('status', 'Akun staff berhasil ditambahkan.');
+    }
+
+    public function updateStaff(Request $request, UserIdentity $staff): RedirectResponse
+    {
+        $this->ensureSuperadmin();
+
+        $validated = $request->validate([
+            'full_name' => ['required', 'string', 'max:191'],
+            'email' => [
+                'required',
+                'email',
+                'max:191',
+                Rule::unique('user', 'email')->ignore($staff->id, 'id'),
+                Rule::unique('user_identity', 'email')->ignore($staff->id, 'id'),
+            ],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'role' => ['required', Rule::in(['superadmin', 'admin_keuangan', 'panitia'])],
+            'event_ids' => ['array'],
+            'event_ids.*' => [
+                'string',
+                Rule::exists('event', 'id')->where(fn ($query) => $query->where('type', 'competition')),
+            ],
+        ]);
+
+        if ($staff->role === 'superadmin' && $validated['role'] !== 'superadmin') {
+            $this->abortIfLastSuperadmin($staff);
+        }
+
+        DB::transaction(function () use ($validated, $request, $staff) {
+            $staff->user()->update([
+                'email' => $validated['email'],
+                'full_name' => $validated['full_name'],
+            ]);
+
+            $identityPayload = [
+                'email' => $validated['email'],
+                'is_verified' => $request->boolean('is_verified'),
+                'role' => $validated['role'],
+            ];
+
+            if (! empty($validated['password'])) {
+                $identityPayload['hash'] = Hash::make($validated['password']);
+            }
+
+            $staff->update($identityPayload);
+            $staff->events()->sync($validated['event_ids'] ?? []);
+        });
+
+        return back()->with('status', 'Akun staff berhasil diperbarui.');
+    }
+
+    public function destroyStaff(UserIdentity $staff): RedirectResponse
+    {
+        $this->ensureSuperadmin();
+
+        abort_if(auth()->id() === $staff->id, 403, 'Akun yang sedang login tidak bisa dihapus.');
+
+        if ($staff->role === 'superadmin') {
+            $this->abortIfLastSuperadmin($staff);
+        }
+
+        DB::transaction(function () use ($staff) {
+            $user = $staff->user;
+
+            $staff->events()->detach();
+            $staff->delete();
+            $user?->delete();
+        });
+
+        return back()->with('status', 'Akun staff berhasil dihapus.');
     }
 
     public function transactions(): View
@@ -92,10 +208,16 @@ class AdminDashboardController extends Controller
             'events' => Event::withCount(['teams', 'participants'])
                 ->orderBy('title')
                 ->get(),
+        ]);
+    }
+
+    public function files(): View
+    {
+        return view('admin.files.index', [
             'recentFiles' => Media::with('uploader')
                 ->whereIn('grouping', ['competition_submission', 'dokum_tahun_lalu', 'twibbon'])
                 ->latest('created_at')
-                ->limit(12)
+                ->limit(50)
                 ->get(),
         ]);
     }
@@ -103,12 +225,117 @@ class AdminDashboardController extends Controller
     public function timelines(): View
     {
         return view('admin.timelines.index', [
-            'events' => Event::with(['timelines' => fn ($query) => $query->orderBy('date')])
+            'events' => Event::withCount(['teams', 'timelines'])
                 ->where('type', 'competition')
                 ->orderBy('title')
                 ->get(),
-            'timelineCount' => EventTimeline::count(),
+            'canManageTimelines' => auth()->user()?->role === 'superadmin',
         ]);
+    }
+
+    public function timelineAgenda(Event $event): View
+    {
+        $this->abortUnlessCompetition($event);
+
+        return view('admin.timelines.agenda', [
+            'event' => $event->load(['timelines' => fn ($query) => $query->orderBy('date')])
+                ->loadCount('teams'),
+            'events' => Event::where('type', 'competition')->orderBy('title')->get(),
+            'canManageTimelines' => auth()->user()?->role === 'superadmin',
+        ]);
+    }
+
+    public function storeCompetition(Request $request): RedirectResponse
+    {
+        $this->ensureSuperadmin();
+
+        $validated = $this->validateCompetition($request);
+
+        Event::create([
+            ...$validated,
+            'id' => (string) Str::uuid(),
+            'type' => 'competition',
+            'is_active' => true,
+            'max_noncompetition_participant' => null,
+        ]);
+
+        return back()->with('status', 'Kompetisi berhasil ditambahkan.');
+    }
+
+    public function updateCompetition(Request $request, Event $event): RedirectResponse
+    {
+        $this->ensureSuperadmin();
+        $this->abortUnlessCompetition($event);
+
+        $event->update($this->validateCompetition($request));
+
+        return back()->with('status', 'Kompetisi berhasil diperbarui.');
+    }
+
+    public function destroyCompetition(Event $event): RedirectResponse
+    {
+        $this->ensureSuperadmin();
+        $this->abortUnlessCompetition($event);
+
+        if ($event->teams()->exists()) {
+            $event->update(['is_active' => false]);
+
+            return back()->with('status', 'Kompetisi memiliki tim terdaftar, jadi dinonaktifkan tanpa menghapus data.');
+        }
+
+        DB::transaction(function () use ($event) {
+            $event->timelines()->delete();
+            $event->delete();
+        });
+
+        return back()->with('status', 'Kompetisi berhasil dihapus.');
+    }
+
+    public function toggleCompetitionStatus(Event $event): RedirectResponse
+    {
+        $this->ensureSuperadmin();
+        $this->abortUnlessCompetition($event);
+
+        $event->update([
+            'is_active' => ! $event->is_active,
+        ]);
+
+        return back()->with('status', $event->is_active
+            ? 'Kompetisi berhasil diaktifkan kembali.'
+            : 'Kompetisi berhasil dinonaktifkan.');
+    }
+
+    public function storeTimeline(Request $request): RedirectResponse
+    {
+        $this->ensureSuperadmin();
+
+        $validated = $this->validateCompetitionTimeline($request);
+
+        EventTimeline::create($validated);
+
+        return back()->with('status', 'Agenda kompetisi berhasil ditambahkan.');
+    }
+
+    public function updateTimeline(Request $request, EventTimeline $timeline): RedirectResponse
+    {
+        $this->ensureSuperadmin();
+        $this->abortUnlessCompetitionTimeline($timeline);
+
+        $validated = $this->validateCompetitionTimeline($request);
+
+        $timeline->update($validated);
+
+        return back()->with('status', 'Agenda kompetisi berhasil diperbarui.');
+    }
+
+    public function destroyTimeline(EventTimeline $timeline): RedirectResponse
+    {
+        $this->ensureSuperadmin();
+        $this->abortUnlessCompetitionTimeline($timeline);
+
+        $timeline->delete();
+
+        return back()->with('status', 'Agenda kompetisi berhasil dihapus.');
     }
 
     private function mediaUrl(?string $path): ?string
@@ -122,5 +349,60 @@ class AdminDashboardController extends Controller
         }
 
         return Storage::url($path);
+    }
+
+    private function ensureSuperadmin(): void
+    {
+        abort_unless(auth()->user()?->role === 'superadmin', 403);
+    }
+
+    private function isAdminStaff(): bool
+    {
+        return in_array(auth()->user()?->role, ['superadmin', 'admin_keuangan', 'panitia'], true);
+    }
+
+    private function abortIfLastSuperadmin(UserIdentity $staff): void
+    {
+        $otherSuperadmins = UserIdentity::where('role', 'superadmin')
+            ->where('id', '!=', $staff->id)
+            ->exists();
+
+        abort_unless($otherSuperadmins, 403, 'Minimal harus ada satu akun superadmin aktif.');
+    }
+
+    private function validateCompetitionTimeline(Request $request): array
+    {
+        return $request->validate([
+            'event_id' => [
+                'required',
+                'string',
+                Rule::exists('event', 'id')->where(fn ($query) => $query->where('type', 'competition')),
+            ],
+            'title' => ['required', 'string', 'max:191'],
+            'date' => ['required', 'date'],
+        ]);
+    }
+
+    private function abortUnlessCompetitionTimeline(EventTimeline $timeline): void
+    {
+        $this->abortUnlessCompetition($timeline->event);
+    }
+
+    private function validateCompetition(Request $request): array
+    {
+        return $request->validate([
+            'title' => ['required', 'string', 'max:191'],
+            'description' => ['required', 'string', 'max:2000'],
+            'guide_book_url' => ['required', 'url', 'max:500'],
+            'price' => ['required', 'integer', 'min:0'],
+            'is_active' => ['sometimes', 'boolean'],
+            'contact_person1' => ['required', 'string', 'max:191'],
+            'contact_person2' => ['nullable', 'string', 'max:191'],
+        ]);
+    }
+
+    private function abortUnlessCompetition(?Event $event): void
+    {
+        abort_unless($event?->type === 'competition', 403);
     }
 }

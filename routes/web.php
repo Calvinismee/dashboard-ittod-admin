@@ -27,6 +27,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/teams/{id}/verify', [TeamController::class, 'updateStatus'])->name('operation.teams.verify');
         Route::post('/teams/{teamId}/members/{userId}/verify', [TeamController::class, 'updateMemberStatus'])->name('operation.teams.verifyMember');
 
+        Route::post('/events', [TimelineController::class, 'storeEvent'])->name('operation.events.store');
+
         // REQ-10: Pengelolaan Lini Masa Kompetisi (CRUD Timeline)
         Route::resource('timeline', TimelineController::class);
     });
@@ -46,11 +48,23 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('admin')->name('admin.')->middleware('verified')->group(function () {
         Route::get('/', [AdminDashboardController::class, 'dashboard'])->name('dashboard');
         Route::get('/staff', [AdminDashboardController::class, 'staff'])->name('staff.index');
-        Route::get('/transactions', [AdminDashboardController::class, 'transactions'])->name('transactions.index');
+        Route::post('/staff', [AdminDashboardController::class, 'storeStaff'])->name('staff.store');
+        Route::patch('/staff/{staff}', [AdminDashboardController::class, 'updateStaff'])->name('staff.update');
+        Route::delete('/staff/{staff}', [AdminDashboardController::class, 'destroyStaff'])->name('staff.destroy');
+        Route::redirect('/transactions', '/operation/teams')->name('transactions.index');
         Route::patch('/transactions/{team}/accept', [AdminDashboardController::class, 'acceptTransaction'])->name('transactions.accept');
         Route::patch('/transactions/{team}/reject', [AdminDashboardController::class, 'rejectTransaction'])->name('transactions.reject');
         Route::get('/files-participants', [AdminDashboardController::class, 'filesParticipants'])->name('files-participants.index');
+        Route::get('/files', [AdminDashboardController::class, 'files'])->name('files.index');
+        Route::post('/competitions', [AdminDashboardController::class, 'storeCompetition'])->name('competitions.store');
+        Route::patch('/competitions/{event}', [AdminDashboardController::class, 'updateCompetition'])->name('competitions.update');
+        Route::patch('/competitions/{event}/status', [AdminDashboardController::class, 'toggleCompetitionStatus'])->name('competitions.status');
+        Route::delete('/competitions/{event}', [AdminDashboardController::class, 'destroyCompetition'])->name('competitions.destroy');
         Route::get('/timelines', [AdminDashboardController::class, 'timelines'])->name('timelines.index');
+        Route::get('/timelines/{event}/agenda', [AdminDashboardController::class, 'timelineAgenda'])->name('timelines.agenda');
+        Route::post('/timelines', [AdminDashboardController::class, 'storeTimeline'])->name('timelines.store');
+        Route::patch('/timelines/{timeline}', [AdminDashboardController::class, 'updateTimeline'])->name('timelines.update');
+        Route::delete('/timelines/{timeline}', [AdminDashboardController::class, 'destroyTimeline'])->name('timelines.destroy');
     });
 
     Route::post('/transaction/{teamId}/verify', [TransactionController::class, 'verify']);
