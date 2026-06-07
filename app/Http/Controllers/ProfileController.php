@@ -6,6 +6,7 @@ use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
@@ -26,13 +27,21 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $identity = $request->user();
+        $validated = $request->validated();
+        $emailChanged = $identity->email !== $validated['email'];
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
+        DB::transaction(function () use ($identity, $validated, $emailChanged) {
+            $identity->user()->update([
+                'full_name' => $validated['name'],
+                'email' => $validated['email'],
+            ]);
 
-        $request->user()->save();
+            $identity->update([
+                'email' => $validated['email'],
+                'is_verified' => $emailChanged ? false : $identity->is_verified,
+            ]);
+        });
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
@@ -46,11 +55,15 @@ class ProfileController extends Controller
             'password' => ['required', 'current_password'],
         ]);
 
-        $user = $request->user();
+        $identity = $request->user();
+        $profile = $identity->user;
 
         Auth::logout();
 
-        $user->delete();
+        DB::transaction(function () use ($identity, $profile) {
+            $identity->delete();
+            $profile?->delete();
+        });
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
