@@ -119,10 +119,7 @@
                                 {{ $accessScopes[$staff->role] ?? ($staff->events->pluck('title')->join(', ') ?: 'Belum ditugaskan') }}
                             </td>
                             <td class="px-4 py-4">
-                                <span class="inline-flex items-center gap-2 text-sm font-semibold {{ $staff->is_verified ? 'text-emerald-700' : 'text-gray-500' }}">
-                                    <span class="relative inline-flex h-5 w-9 rounded-full {{ $staff->is_verified ? 'bg-emerald-500' : 'bg-gray-300' }}">
-                                        <span class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition {{ $staff->is_verified ? 'right-0.5' : 'left-0.5' }}"></span>
-                                    </span>
+                                <span class="inline-flex items-center gap-2 text-sm font-bold uppercase {{ $staff->is_verified ? 'text-emerald-700' : 'text-gray-500' }}">
                                     {{ $staff->is_verified ? 'Aktif' : 'Nonaktif' }}
                                 </span>
                             </td>

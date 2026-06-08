@@ -11,7 +11,7 @@
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                <div class="hidden space-x-4 sm:-my-px sm:ms-6 sm:flex">
                     <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('dashboard') || request()->routeIs('admin.dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
@@ -22,14 +22,17 @@
                         {{ __('Berkas & Peserta') }}
                     </x-nav-link>
                     <x-nav-link :href="route('admin.timelines.index')" :active="request()->routeIs('admin.timelines.*')">
-                        {{ __('Timeline Kompetisi') }}
+                        {{ __('Timeline') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.announcements.index')" :active="request()->routeIs('admin.announcements.*')">
+                        {{ __('Pengumuman') }}
                     </x-nav-link>
                     @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
                         <x-nav-link :href="route('operation.teams.index')" :active="request()->routeIs('operation.teams.*')">
-                            {{ __('Verifikasi Transaksi') }}
+                            {{ __('Transaksi') }}
                         </x-nav-link>
                         <x-nav-link :href="route('timeline.index')" :active="request()->routeIs('timeline.*')">
-                            {{ __('Lini Masa Kegiatan') }}
+                            {{ __('Agenda') }}
                         </x-nav-link>
                     @endif
                 </div>
@@ -51,10 +54,6 @@
                     </x-slot>
 
                     <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
-                        </x-dropdown-link>
-
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -94,14 +93,17 @@
                 {{ __('Berkas & Peserta') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('admin.timelines.index')" :active="request()->routeIs('admin.timelines.*')">
-                {{ __('Timeline Kompetisi') }}
+                {{ __('Timeline') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('admin.announcements.index')" :active="request()->routeIs('admin.announcements.*')">
+                {{ __('Pengumuman') }}
             </x-responsive-nav-link>
             @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
                 <x-responsive-nav-link :href="route('operation.teams.index')" :active="request()->routeIs('operation.teams.*')">
-                    {{ __('Verifikasi Transaksi') }}
+                    {{ __('Transaksi') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('timeline.index')" :active="request()->routeIs('timeline.*')">
-                    {{ __('Lini Masa Kegiatan') }}
+                    {{ __('Agenda') }}
                 </x-responsive-nav-link>
             @endif
         </div>
@@ -114,10 +116,6 @@
             </div>
 
             <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-
                 <!-- Authentication -->
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

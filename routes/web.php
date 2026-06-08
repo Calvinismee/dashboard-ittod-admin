@@ -65,6 +65,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/timelines', [AdminDashboardController::class, 'storeTimeline'])->name('timelines.store');
         Route::patch('/timelines/{timeline}', [AdminDashboardController::class, 'updateTimeline'])->name('timelines.update');
         Route::delete('/timelines/{timeline}', [AdminDashboardController::class, 'destroyTimeline'])->name('timelines.destroy');
+        Route::get('/announcements', [AdminDashboardController::class, 'announcements'])->name('announcements.index');
+        Route::post('/announcements', [AdminDashboardController::class, 'storeAnnouncement'])->name('announcements.store');
+        Route::patch('/announcements/{announcement}', [AdminDashboardController::class, 'updateAnnouncement'])->name('announcements.update');
+        Route::delete('/announcements/{announcement}', [AdminDashboardController::class, 'destroyAnnouncement'])->name('announcements.destroy');
     });
 
     Route::post('/transaction/{teamId}/verify', [TransactionController::class, 'verify']);

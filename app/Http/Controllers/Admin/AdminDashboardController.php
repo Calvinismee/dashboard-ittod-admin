@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
+use App\Models\EventAnnouncement;
 use App\Models\EventTimeline;
 use App\Models\Media;
 use App\Models\Team;
@@ -336,6 +337,57 @@ class AdminDashboardController extends Controller
         $timeline->delete();
 
         return back()->with('status', 'Agenda kompetisi berhasil dihapus.');
+    }
+
+    public function announcements(): View
+    {
+        return view('admin.announcements.index', [
+            'events' => Event::orderBy('title')->get(),
+            'announcements' => EventAnnouncement::with(['event', 'author'])->latest('created_at')->get(),
+        ]);
+    }
+
+    public function storeAnnouncement(Request $request): RedirectResponse
+    {
+        abort_unless($this->isAdminStaff(), 403);
+
+        $validated = $request->validate([
+            'event_id' => ['required', 'string', Rule::exists('event', 'id')],
+            'title' => ['required', 'string', 'max:191'],
+            'description' => ['required', 'string'],
+        ]);
+
+        EventAnnouncement::create([
+            'id' => (string) Str::uuid(),
+            'author_id' => auth()->id(),
+            ...$validated,
+        ]);
+
+        return back()->with('status', 'Pengumuman berhasil ditambahkan.');
+    }
+
+    public function updateAnnouncement(Request $request, EventAnnouncement $announcement): RedirectResponse
+    {
+        abort_unless($this->isAdminStaff(), 403);
+
+        $validated = $request->validate([
+            'event_id' => ['required', 'string', Rule::exists('event', 'id')],
+            'title' => ['required', 'string', 'max:191'],
+            'description' => ['required', 'string'],
+        ]);
+
+        $announcement->update($validated);
+
+        return back()->with('status', 'Pengumuman berhasil diperbarui.');
+    }
+
+    public function destroyAnnouncement(EventAnnouncement $announcement): RedirectResponse
+    {
+        abort_unless($this->isAdminStaff(), 403);
+
+        $announcement->delete();
+
+        return back()->with('status', 'Pengumuman berhasil dihapus.');
     }
 
     private function mediaUrl(?string $path): ?string
