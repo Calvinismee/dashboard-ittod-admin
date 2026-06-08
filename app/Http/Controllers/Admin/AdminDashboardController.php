@@ -24,6 +24,7 @@ class AdminDashboardController extends Controller
 {
     public function dashboard(): View
     {
+        abort_unless($this->isAdminStaff(), 403);
         return view('admin.dashboard', [
             'stats' => [
                 'events' => Event::count(),
@@ -184,7 +185,9 @@ class AdminDashboardController extends Controller
 
     public function transactions(): View
     {
+        abort_unless(in_array(auth()->user()?->role, ['superadmin', 'admin_keuangan']), 403);
         $teams = Team::with(['event', 'paymentProof', 'members'])
+            ->where('is_document_verified', 1)
             ->latest('created_at')
             ->get()
             ->map(function (Team $team) {
@@ -200,6 +203,8 @@ class AdminDashboardController extends Controller
 
     public function acceptTransaction(Team $team): RedirectResponse
     {
+        abort_unless(in_array(auth()->user()?->role, ['superadmin', 'admin_keuangan']), 403);
+
         $team->update([
             'is_verified' => true,
             'verification_error' => null,
@@ -210,6 +215,8 @@ class AdminDashboardController extends Controller
 
     public function rejectTransaction(Request $request, Team $team): RedirectResponse
     {
+        abort_unless(in_array(auth()->user()?->role, ['superadmin', 'admin_keuangan']), 403);
+
         $validated = $request->validate([
             'verification_error' => ['required', 'string', 'max:1000'],
         ]);
@@ -224,15 +231,23 @@ class AdminDashboardController extends Controller
 
     public function filesParticipants(): View
     {
+        abort_unless(in_array(auth()->user()?->role, ['superadmin', 'panitia']), 403);
+        
+        $user = auth()->user();
+        $query = Event::withCount(['teams', 'participants'])->orderBy('title');
+        
+        if ($user->role === 'panitia') {
+            $query->whereIn('id', $user->events->pluck('id'));
+        }
+
         return view('admin.files-participants.index', [
-            'events' => Event::withCount(['teams', 'participants'])
-                ->orderBy('title')
-                ->get(),
+            'events' => $query->get(),
         ]);
     }
 
     public function files(): View
     {
+        abort_unless(in_array(auth()->user()?->role, ['superadmin', 'panitia']), 403);
         return view('admin.files.index', [
             'recentFiles' => Media::with('uploader')
                 ->whereIn('grouping', ['competition_submission', 'dokum_tahun_lalu', 'twibbon'])
@@ -244,23 +259,41 @@ class AdminDashboardController extends Controller
 
     public function timelines(): View
     {
+        abort_unless(in_array(auth()->user()?->role, ['superadmin', 'panitia']), 403);
+
+        $user = auth()->user();
+        $query = Event::withCount(['teams', 'timelines'])
+            ->where('type', 'competition')
+            ->orderBy('title');
+
+        if ($user->role === 'panitia') {
+            $query->whereIn('id', $user->events->pluck('id'));
+        }
+
         return view('admin.timelines.index', [
-            'events' => Event::withCount(['teams', 'timelines'])
-                ->where('type', 'competition')
-                ->orderBy('title')
-                ->get(),
-            'canManageTimelines' => auth()->user()?->role === 'superadmin',
+            'events' => $query->get(),
+            'canManageTimelines' => $user->role === 'superadmin',
         ]);
     }
 
     public function timelineAgenda(Event $event): View
     {
+        abort_unless(in_array(auth()->user()?->role, ['superadmin', 'panitia']), 403);
         $this->abortUnlessCompetition($event);
+
+        if (auth()->user()->role === 'panitia') {
+            abort_unless(auth()->user()->events->contains('id', $event->id), 403);
+        }
+
+        $eventsQuery = Event::where('type', 'competition')->orderBy('title');
+        if (auth()->user()->role === 'panitia') {
+            $eventsQuery->whereIn('id', auth()->user()->events->pluck('id'));
+        }
 
         return view('admin.timelines.agenda', [
             'event' => $event->load(['timelines' => fn ($query) => $query->orderBy('date')])
                 ->loadCount('teams'),
-            'events' => Event::where('type', 'competition')->orderBy('title')->get(),
+            'events' => $eventsQuery->get(),
             'canManageTimelines' => auth()->user()?->role === 'superadmin',
         ]);
     }
@@ -360,9 +393,21 @@ class AdminDashboardController extends Controller
 
     public function announcements(): View
     {
+        abort_unless(in_array(auth()->user()?->role, ['superadmin', 'panitia']), 403);
+        
+        $user = auth()->user();
+        $eventsQuery = Event::orderBy('title');
+        $announcementsQuery = EventAnnouncement::with(['event', 'author'])->latest('created_at');
+
+        if ($user->role === 'panitia') {
+            $assignedEventIds = $user->events->pluck('id');
+            $eventsQuery->whereIn('id', $assignedEventIds);
+            $announcementsQuery->whereIn('event_id', $assignedEventIds);
+        }
+
         return view('admin.announcements.index', [
-            'events' => Event::orderBy('title')->get(),
-            'announcements' => EventAnnouncement::with(['event', 'author'])->latest('created_at')->get(),
+            'events' => $eventsQuery->get(),
+            'announcements' => $announcementsQuery->get(),
         ]);
     }
 
@@ -370,8 +415,15 @@ class AdminDashboardController extends Controller
     {
         abort_unless($this->isAdminStaff(), 403);
 
+        $user = auth()->user();
+        $eventRules = ['required', 'string', Rule::exists('event', 'id')];
+        
+        if ($user->role === 'panitia') {
+            $eventRules[] = Rule::in($user->events->pluck('id')->toArray());
+        }
+
         $validated = $request->validate([
-            'event_id' => ['required', 'string', Rule::exists('event', 'id')],
+            'event_id' => $eventRules,
             'title' => ['required', 'string', 'max:191'],
             'description' => ['required', 'string'],
         ]);
@@ -388,9 +440,17 @@ class AdminDashboardController extends Controller
     public function updateAnnouncement(Request $request, EventAnnouncement $announcement): RedirectResponse
     {
         abort_unless($this->isAdminStaff(), 403);
+        
+        $user = auth()->user();
+        $eventRules = ['required', 'string', Rule::exists('event', 'id')];
+        
+        if ($user->role === 'panitia') {
+            abort_unless($user->events->contains('id', $announcement->event_id), 403);
+            $eventRules[] = Rule::in($user->events->pluck('id')->toArray());
+        }
 
         $validated = $request->validate([
-            'event_id' => ['required', 'string', Rule::exists('event', 'id')],
+            'event_id' => $eventRules,
             'title' => ['required', 'string', 'max:191'],
             'description' => ['required', 'string'],
         ]);
@@ -403,6 +463,10 @@ class AdminDashboardController extends Controller
     public function destroyAnnouncement(EventAnnouncement $announcement): RedirectResponse
     {
         abort_unless($this->isAdminStaff(), 403);
+
+        if (auth()->user()->role === 'panitia') {
+            abort_unless(auth()->user()->events->contains('id', $announcement->event_id), 403);
+        }
 
         $announcement->delete();
 

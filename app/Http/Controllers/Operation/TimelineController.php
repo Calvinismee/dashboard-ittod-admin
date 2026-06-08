@@ -11,13 +11,24 @@ use Illuminate\Validation\Rule;
 
 class TimelineController extends Controller
 {
+    private function checkAccess()
+    {
+        abort_unless(in_array(auth()->user()->role, ['superadmin']), 403);
+    }
+
     // Menampilkan daftar lini masa kegiatan non-kompetisi (REQ-10)
     public function index()
     {
-        $timelines = EventTimeline::with('event')
+        $this->checkAccess();
+        $query = EventTimeline::with('event')
             ->whereHas('event', fn ($query) => $query->where('type', 'non_competition'))
-            ->orderBy('date', 'asc')
-            ->get();
+            ->orderBy('date', 'asc');
+            
+        if (auth()->user()->role === 'panitia') {
+            $query->whereIn('event_id', auth()->user()->events->pluck('id'));
+        }
+
+        $timelines = $query->get();
 
         return view('operation.timeline.index', compact('timelines'));
     }
@@ -25,13 +36,21 @@ class TimelineController extends Controller
     // Menampilkan form tambah lini masa (REQ-10)
     public function create()
     {
-        $events = Event::where('type', 'non_competition')->orderBy('title')->get();
+        $this->checkAccess();
+        $query = Event::where('type', 'non_competition')->orderBy('title');
+        
+        if (auth()->user()->role === 'panitia') {
+            $query->whereIn('id', auth()->user()->events->pluck('id'));
+        }
+        
+        $events = $query->get();
 
         return view('operation.timeline.create', compact('events'));
     }
 
     public function storeEvent(Request $request)
     {
+        $this->checkAccess();
         $validated = $request->validate([
             'title' => 'required|string|max:191',
             'description' => 'required|string|max:2000',
@@ -60,11 +79,19 @@ class TimelineController extends Controller
     // Menyimpan lini masa baru (REQ-10)
     public function store(Request $request)
     {
+        $this->checkAccess();
+        
+        $eventRules = [
+            'required',
+            Rule::exists('event', 'id')->where(fn ($query) => $query->where('type', 'non_competition')),
+        ];
+        
+        if (auth()->user()->role === 'panitia') {
+            $eventRules[] = Rule::in(auth()->user()->events->pluck('id')->toArray());
+        }
+
         $request->validate([
-            'event_id' => [
-                'required',
-                Rule::exists('event', 'id')->where(fn ($query) => $query->where('type', 'non_competition')),
-            ],
+            'event_id' => $eventRules,
             'title' => 'required|string|max:255',
             'date' => 'required|date',
         ]);
@@ -81,8 +108,18 @@ class TimelineController extends Controller
     // Menampilkan form edit lini masa (REQ-10)
     public function edit(string $id)
     {
+        $this->checkAccess();
         $timeline = EventTimeline::whereHas('event', fn ($query) => $query->where('type', 'non_competition'))->findOrFail($id);
-        $events = Event::where('type', 'non_competition')->orderBy('title')->get();
+        
+        if (auth()->user()->role === 'panitia') {
+            abort_unless(auth()->user()->events->contains('id', $timeline->event_id), 403);
+        }
+
+        $query = Event::where('type', 'non_competition')->orderBy('title');
+        if (auth()->user()->role === 'panitia') {
+            $query->whereIn('id', auth()->user()->events->pluck('id'));
+        }
+        $events = $query->get();
 
         return view('operation.timeline.edit', compact('timeline', 'events'));
     }
@@ -90,13 +127,24 @@ class TimelineController extends Controller
     // Memperbarui lini masa (REQ-10)
     public function update(Request $request, string $id)
     {
+        $this->checkAccess();
         $timeline = EventTimeline::whereHas('event', fn ($query) => $query->where('type', 'non_competition'))->findOrFail($id);
+        
+        if (auth()->user()->role === 'panitia') {
+            abort_unless(auth()->user()->events->contains('id', $timeline->event_id), 403);
+        }
+
+        $eventRules = [
+            'required',
+            Rule::exists('event', 'id')->where(fn ($query) => $query->where('type', 'non_competition')),
+        ];
+        
+        if (auth()->user()->role === 'panitia') {
+            $eventRules[] = Rule::in(auth()->user()->events->pluck('id')->toArray());
+        }
 
         $request->validate([
-            'event_id' => [
-                'required',
-                Rule::exists('event', 'id')->where(fn ($query) => $query->where('type', 'non_competition')),
-            ],
+            'event_id' => $eventRules,
             'title' => 'required|string|max:255',
             'date' => 'required|date',
         ]);
@@ -113,7 +161,13 @@ class TimelineController extends Controller
     // Menghapus lini masa (REQ-10)
     public function destroy(string $id)
     {
+        $this->checkAccess();
         $timeline = EventTimeline::whereHas('event', fn ($query) => $query->where('type', 'non_competition'))->findOrFail($id);
+        
+        if (auth()->user()->role === 'panitia') {
+            abort_unless(auth()->user()->events->contains('id', $timeline->event_id), 403);
+        }
+        
         $timeline->delete();
 
         return redirect()->route('timeline.index')->with('success', 'Lini masa berhasil dihapus!');

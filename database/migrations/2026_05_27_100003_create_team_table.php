@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('team_name');
             $table->string('team_code', 191)->unique();
             $table->integer('max_member')->default(3);
+            $table->tinyInteger('is_document_verified')->default(0);
             $table->tinyInteger('is_verified')->default(0);
             $table->text('verification_error')->nullable();
             $table->dateTime('created_at', 3)->useCurrent();

@@ -1,6 +1,6 @@
 <x-admin.layout
-    title="Verifikasi Transaksi"
-    subtitle="Periksa bukti transfer, kelengkapan data, dan status verifikasi tim."
+    title="Verifikasi Berkas Tim"
+    subtitle="Periksa kelengkapan data anggota, kartu identitas, dan dokumen persyaratan lomba."
 >
     @if(session('success'))
         <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
@@ -12,12 +12,12 @@
         <div class="flex flex-col gap-3 border-b border-gray-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <div class="flex flex-wrap items-center gap-3">
-                    <h2 class="text-xl font-semibold text-gray-950">Direktori Transaksi Tim</h2>
+                    <h2 class="text-xl font-semibold text-gray-950">Direktori Berkas Tim</h2>
                     <span class="rounded border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-bold uppercase text-indigo-700">
-                        Verification Records
+                        Document Records
                     </span>
                 </div>
-                <p class="mt-1 text-xs font-semibold uppercase tracking-wide text-gray-700">Validasi pembayaran, data anggota, dan status transaksi</p>
+                <p class="mt-1 text-xs font-semibold uppercase tracking-wide text-gray-700">Validasi data anggota dan kelengkapan dokumen persyaratan lomba</p>
             </div>
             <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ $teams->count() }} records detected</p>
         </div>
@@ -52,7 +52,7 @@
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($teams as $team)
                         @php
-                            $isTeamVerified = (bool) $team->is_verified;
+                            $isTeamVerified = (bool) $team->is_document_verified;
                             $hasTeamErr = !empty($team->verification_error);
                             $hasMemErr = $team->members->contains(fn($m) => !empty($m->verification_error));
 
@@ -60,7 +60,7 @@
                                 $statusLabel = 'Terverifikasi';
                                 $statusClass = 'border-emerald-200 bg-emerald-50 text-emerald-700';
                             } elseif ($hasTeamErr || $hasMemErr) {
-                                $statusLabel = 'Butuh Revisi';
+                                $statusLabel = 'Ditolak (Revisi)';
                                 $statusClass = 'border-rose-200 bg-rose-50 text-rose-700';
                             } else {
                                 $statusLabel = 'Sedang Diperiksa';
@@ -106,7 +106,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-600">Belum ada transaksi tim.</td>
+                            <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-600">Belum ada tim terdaftar.</td>
                         </tr>
                     @endforelse
                 </tbody>

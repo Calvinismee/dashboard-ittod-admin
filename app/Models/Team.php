@@ -24,6 +24,7 @@ class Team extends Model
         'team_name',
         'team_code',
         'max_member',
+        'is_document_verified',
         'is_verified',
         'verification_error',
         'payment_proof_id',

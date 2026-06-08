@@ -13,6 +13,7 @@ class ExportController extends Controller
 {
     public function exportTeams(Request $request): StreamedResponse
     {
+        abort_unless(in_array(auth()->user()->role, ['superadmin', 'panitia', 'admin_keuangan']), 403);
         $request->validate([
             'event_id' => ['required', 'string', 'exists:event,id'],
         ]);
@@ -30,6 +31,7 @@ class ExportController extends Controller
 
     public function exportParticipants(Request $request): StreamedResponse
     {
+        abort_unless(in_array(auth()->user()->role, ['superadmin', 'panitia', 'admin_keuangan']), 403);
         $request->validate([
             'event_id' => ['required', 'string', 'exists:event,id'],
         ]);
@@ -48,6 +50,7 @@ class ExportController extends Controller
 
     public function exportTeamsGlobal(): StreamedResponse
     {
+        abort_unless(in_array(auth()->user()->role, ['superadmin', 'admin_keuangan']), 403);
         $filename = 'rekap-tim-semua-' . now()->format('Y-m-d') . '.csv';
 
         return response()->stream(function () {
@@ -60,6 +63,7 @@ class ExportController extends Controller
 
     public function exportParticipantsGlobal(): StreamedResponse
     {
+        abort_unless(in_array(auth()->user()->role, ['superadmin', 'admin_keuangan']), 403);
         $filename = 'rekap-peserta-semua-' . now()->format('Y-m-d') . '.csv';
 
         return response()->stream(function () {

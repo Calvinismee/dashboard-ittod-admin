@@ -20,6 +20,7 @@
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div class="space-y-6 lg:col-span-2">
+            @if(auth()->user()->role !== 'panitia')
             <section class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                 <div class="flex flex-col gap-1 border-b border-gray-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -68,6 +69,7 @@
                     @endif
                 </div>
             </section>
+            @endif
 
             <section>
                 <div class="mb-4">
@@ -114,17 +116,21 @@
                                 <div class="flex flex-col justify-between">
                                     <div>
                                         <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Status Berkas Anggota</p>
-                                        @if(empty($member->verification_error))
-                                            <span class="mt-2 inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                                Berkas Valid
-                                            </span>
-                                        @else
+                                        @if(!empty($member->verification_error))
                                             <span class="mt-2 inline-flex items-center rounded-md bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
                                                 Ada Kesalahan
                                             </span>
                                             <div class="mt-3 rounded-md border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                                                 {{ $member->verification_error }}
                                             </div>
+                                        @elseif($team->is_document_verified)
+                                            <span class="mt-2 inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                                                Berkas Valid
+                                            </span>
+                                        @else
+                                            <span class="mt-2 inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                                                Sedang Diperiksa
+                                            </span>
                                         @endif
                                     </div>
 
@@ -177,7 +183,7 @@
                         <dt class="text-gray-500">Status Penguncian</dt>
                         <dd>
                             @php
-                                $isTeamVerified = (bool) $team->is_verified;
+                                $isTeamVerified = (bool) $team->is_document_verified;
                                 $hasTeamErr = !empty($team->verification_error);
                                 $hasMemErr = $team->members->contains(fn($memberItem) => !empty($memberItem->verification_error));
                                 $isUnderReview = !$isTeamVerified && !$hasTeamErr && !$hasMemErr;
@@ -192,20 +198,20 @@
                 </dl>
             </section>
 
-            <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm" x-data="{ verified: '{{ $team->is_verified ? '1' : '0' }}' }">
-                <h2 class="text-lg font-semibold text-gray-950">Keputusan Verifikasi</h2>
+            <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm" x-data="{ verified: '{{ $team->is_document_verified ? '1' : '0' }}' }">
+                <h2 class="text-lg font-semibold text-gray-950">Keputusan Verifikasi Berkas</h2>
                 <form action="{{ route('operation.teams.verify', $team->id) }}" method="POST" class="mt-5 space-y-5">
                     @csrf
 
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Status Validasi Berkas Pendaftaran</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Status Validasi Berkas Anggota</p>
                         <div class="mt-3 grid grid-cols-2 gap-3">
                             <label class="rounded-lg border border-gray-200 px-3 py-3 text-center hover:bg-gray-50">
-                                <input type="radio" name="is_verified" value="1" x-model="verified" class="text-emerald-600 focus:ring-emerald-500">
+                                <input type="radio" name="is_document_verified" value="1" x-model="verified" class="text-emerald-600 focus:ring-emerald-500">
                                 <span class="mt-2 block text-sm font-semibold text-emerald-700">Setujui</span>
                             </label>
                             <label class="rounded-lg border border-gray-200 px-3 py-3 text-center hover:bg-gray-50">
-                                <input type="radio" name="is_verified" value="0" x-model="verified" class="text-rose-600 focus:ring-rose-500">
+                                <input type="radio" name="is_document_verified" value="0" x-model="verified" class="text-rose-600 focus:ring-rose-500">
                                 <span class="mt-2 block text-sm font-semibold text-rose-700">Tolak</span>
                             </label>
                         </div>

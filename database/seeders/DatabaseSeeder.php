@@ -92,13 +92,14 @@ class DatabaseSeeder extends Seeder
 
         // Akun Superadmin 1 (superadmin)
         $superadminUser = User::create([
+            'id' => '11111111-1111-1111-1111-111111111111',
             'email' => 'superadmin@ittoday.id',
             'full_name' => 'Superadmin IT Today',
             'is_registration_complete' => 1,
         ]);
 
         UserIdentity::create([
-            'id' => $superadminUser->id,
+            'id' => '11111111-1111-1111-1111-111111111111',
             'email' => 'superadmin@ittoday.id',
             'provider' => 'basic',
             'hash' => Hash::make('superadmin'),
@@ -110,13 +111,14 @@ class DatabaseSeeder extends Seeder
 
         // Akun Admin 1 (admin)
         $adminUser = User::create([
+            'id' => '22222222-2222-2222-2222-222222222222',
             'email' => 'admin@ittoday.id',
             'full_name' => 'Admin IT Today',
             'is_registration_complete' => 1,
         ]);
 
         UserIdentity::create([
-            'id' => $adminUser->id,
+            'id' => '22222222-2222-2222-2222-222222222222',
             'email' => 'admin@ittoday.id',
             'provider' => 'basic',
             'hash' => Hash::make('admin'),
@@ -126,135 +128,131 @@ class DatabaseSeeder extends Seeder
             'verification_token_expiration' => now()->addYear(),
         ]);
 
-        // Akun Peserta 1 (hidup jokowi)
-        $peserta1 = User::create([
-            'email' => 'jokowi@gmail.com',
-            'full_name' => 'hidup jokowi',
+        // Akun Panitia 1 (HackToday)
+        $panitiaUser = User::create([
+            'id' => '33333333-3333-3333-3333-333333333333',
+            'email' => 'panitia@ittoday.id',
+            'full_name' => 'Panitia HackToday',
             'is_registration_complete' => 1,
         ]);
-
-        UserIdentity::create([
-            'id' => $peserta1->id,
-            'email' => 'jokowi@gmail.com',
-            'provider' => 'basic',
-            'hash' => Hash::make('hidup jokowi'),
-            'role' => 'user',
-            'is_verified' => 1,
-            'verification_token' => Str::random(40),
-            'verification_token_expiration' => now()->addYear(),
+        $panitiaIdentity = UserIdentity::create([
+            'id' => '33333333-3333-3333-3333-333333333333', 'email' => 'panitia@ittoday.id', 'provider' => 'basic', 'hash' => Hash::make('panitia'),
+            'role' => 'panitia', 'is_verified' => 1, 'verification_token' => Str::random(40), 'verification_token_expiration' => now()->addYear(),
         ]);
+        $panitiaIdentity->events()->attach(['HackToday']);
 
-        // Akun Peserta 2 (akan lawan)
-        $peserta2 = User::create([
-            'email' => 'lawan@gmail.com',
-            'full_name' => 'akan lawan',
+        // Akun Panitia 2 (UX Today)
+        $panitiaUxUser = User::create([
+            'id' => '44444444-4444-4444-4444-444444444444',
+            'email' => 'panitia.uxtoday@ittoday.id',
+            'full_name' => 'Panitia UX Today',
             'is_registration_complete' => 1,
         ]);
-
-        UserIdentity::create([
-            'id' => $peserta2->id,
-            'email' => 'lawan@gmail.com',
-            'provider' => 'basic',
-            'hash' => Hash::make('akan lawan'),
-            'role' => 'user',
-            'is_verified' => 1,
-            'verification_token' => Str::random(40),
-            'verification_token_expiration' => now()->addYear(),
+        $panitiaUxIdentity = UserIdentity::create([
+            'id' => '44444444-4444-4444-4444-444444444444', 'email' => 'panitia.uxtoday@ittoday.id', 'provider' => 'basic', 'hash' => Hash::make('panitia'),
+            'role' => 'panitia', 'is_verified' => 1, 'verification_token' => Str::random(40), 'verification_token_expiration' => now()->addYear(),
         ]);
+        $panitiaUxIdentity->events()->attach(['UXToday']);
 
-        Media::create([
-            'id' => '1ed7406e-b415-4055-9aab-a61eb9d480a3',
-            'uploader_id' => $peserta1->id,
-            'name' => 'Something Here23',
-            'grouping' => 'competition_submission',
-            'type' => 'pdf',
-            'url' => 'https://google.com.id',
-        ]);
+        // Generate 10 Peserta Users
+        $peserta = [];
+        $mediaKtm = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $userId = (string) Str::uuid();
+            $user = User::create([
+                'id' => $userId,
+                'email' => "peserta{$i}@gmail.com",
+                'full_name' => "Peserta Dummy {$i}",
+                'is_registration_complete' => 1,
+            ]);
+            UserIdentity::create([
+                'id' => $userId, 'email' => "peserta{$i}@gmail.com", 'provider' => 'basic', 'hash' => Hash::make('password'),
+                'role' => 'user', 'is_verified' => 1, 'verification_token' => Str::random(40), 'verification_token_expiration' => now()->addYear(),
+            ]);
+            $peserta[$i] = $user;
+            
+            $ktmId = (string) Str::uuid();
+            $mediaKtm[$i] = $ktmId;
+            Media::create([
+                'id' => $ktmId,
+                'uploader_id' => $userId,
+                'name' => "KTM Peserta {$i}",
+                'grouping' => 'dokum_tahun_lalu',
+                'type' => 'image',
+                'url' => "https://placehold.co/700x450/png?text=KTM+Peserta+{$i}",
+            ]);
+        }
 
-        Media::create([
-            'id' => 'ede6f334-9448-4f15-a636-b8a9dd70d819',
-            'uploader_id' => $peserta2->id,
-            'name' => 'Something Here2',
-            'grouping' => 'competition_submission',
-            'type' => 'pdf',
-            'url' => 'https://google.com.id',
-        ]);
+        // Create 5 Payment Proof Media
+        $mediaPay = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $payId = (string) Str::uuid();
+            $mediaPay[$i] = $payId;
+            Media::create([
+                'id' => $payId,
+                'uploader_id' => $peserta[$i]->id,
+                'name' => "Bukti Bayar Tim {$i}",
+                'grouping' => 'payments',
+                'type' => 'image',
+                'url' => "https://placehold.co/500x800/png?text=Bukti+Bayar+Tim+{$i}",
+            ]);
+        }
 
-        Media::create([
-            'id' => '6b5d9f7a-8a2b-4e1f-b6de-53ac8f4f2d11',
-            'uploader_id' => $peserta1->id,
-            'name' => 'sample-payment-hacktoday-team-1',
-            'grouping' => 'payments',
-            'type' => 'image',
-            'url' => 'https://cdn-web.ruangguru.com/landing-pages/assets/hs/kampus-ipb.png',
-        ]);
+        // ==========================================
+        // SCENARIOS
+        // ==========================================
 
-        Media::create([
-            'id' => '766ababc-69a1-46e1-9b10-76ab7ad46721',
-            'uploader_id' => $peserta2->id,
-            'name' => 'sample-payment-hacktoday-team-2',
-            'grouping' => 'payments',
-            'type' => 'image',
-            'url' => 'https://cdn-web.ruangguru.com/landing-pages/assets/hs/kampus-ipb.png',
-        ]);
-
-        Media::create([
-            'id' => 'f03d43d0-61ee-4e43-99ef-8431414b6d9c',
-            'uploader_id' => $peserta1->id,
-            'name' => 'sample-ktm-jokowi',
-            'grouping' => 'dokum_tahun_lalu',
-            'type' => 'image',
-            'url' => 'https://placehold.co/700x450/png?text=Contoh+KTM+Peserta+1',
-        ]);
-
-        Media::create([
-            'id' => '5f6f9e03-d309-4719-b762-df0f6ed53f4d',
-            'uploader_id' => $peserta2->id,
-            'name' => 'sample-ktm-lawan',
-            'grouping' => 'dokum_tahun_lalu',
-            'type' => 'image',
-            'url' => 'https://cdn-web.ruangguru.com/landing-pages/assets/hs/kampus-ipb.png',
-        ]);
-
+        // Tim 1: Pending Berkas (HackToday, 2 Members)
+        $t1 = (string) Str::uuid();
         Team::create([
-            'id' => '246b5f88-e848-4adb-a6eb-0726116c4d7a',
-            'competition_id' => 'HackToday',
-            'team_name' => 'Tuhan Maha Adil555',
-            'team_code' => '8u2gUZmE',
-            'max_member' => 3,
-            'is_verified' => 0,
-            'payment_proof_id' => '6b5d9f7a-8a2b-4e1f-b6de-53ac8f4f2d11',
+            'id' => $t1, 'competition_id' => 'HackToday', 'team_name' => 'Tim Pending Berkas', 'team_code' => 'T1-PEND', 'max_member' => 3,
+            'is_document_verified' => 0, 'is_verified' => 0, 'payment_proof_id' => $mediaPay[1],
         ]);
+        TeamMember::create(['user_id' => $peserta[1]->id, 'team_id' => $t1, 'role' => 'leader', 'kartu_id' => $mediaKtm[1]]);
+        TeamMember::create(['user_id' => $peserta[2]->id, 'team_id' => $t1, 'role' => 'member', 'kartu_id' => $mediaKtm[2]]);
 
+        // Tim 2: Berkas Ditolak (UX Today, 1 Member)
+        $t2 = (string) Str::uuid();
         Team::create([
-            'id' => '4f433581-9da2-4d9b-b0b0-e523f7ec320a',
-            'competition_id' => 'HackToday',
-            'team_name' => 'Tuhan Maha Adil5551',
-            'team_code' => 'lBLcuYvn',
-            'max_member' => 3,
-            'is_verified' => 0,
-            'payment_proof_id' => '766ababc-69a1-46e1-9b10-76ab7ad46721',
+            'id' => $t2, 'competition_id' => 'UXToday', 'team_name' => 'Tim Ditolak KTM', 'team_code' => 'T2-REJK', 'max_member' => 3,
+            'is_document_verified' => 0, 'is_verified' => 0, 'payment_proof_id' => $mediaPay[2],
         ]);
-
         TeamMember::create([
-            'user_id' => $peserta1->id,
-            'team_id' => '246b5f88-e848-4adb-a6eb-0726116c4d7a',
-            'role' => 'leader',
-            'kartu_id' => 'f03d43d0-61ee-4e43-99ef-8431414b6d9c',
+            'user_id' => $peserta[3]->id, 'team_id' => $t2, 'role' => 'leader', 'kartu_id' => $mediaKtm[3],
+            'verification_error' => 'KTM buram, tolong unggah ulang.'
         ]);
 
-        TeamMember::create([
-            'user_id' => $peserta2->id,
-            'team_id' => '4f433581-9da2-4d9b-b0b0-e523f7ec320a',
-            'role' => 'leader',
-            'kartu_id' => '5f6f9e03-d309-4719-b762-df0f6ed53f4d',
+        // Tim 3: Menunggu Pembayaran (HackToday, 3 Members)
+        $t3 = (string) Str::uuid();
+        Team::create([
+            'id' => $t3, 'competition_id' => 'HackToday', 'team_name' => 'Tim Menunggu Bayar', 'team_code' => 'T3-WAIT', 'max_member' => 3,
+            'is_document_verified' => 1, 'is_verified' => 0, 'payment_proof_id' => $mediaPay[3],
         ]);
+        TeamMember::create(['user_id' => $peserta[4]->id, 'team_id' => $t3, 'role' => 'leader', 'kartu_id' => $mediaKtm[4]]);
+        TeamMember::create(['user_id' => $peserta[5]->id, 'team_id' => $t3, 'role' => 'member', 'kartu_id' => $mediaKtm[5]]);
+        TeamMember::create(['user_id' => $peserta[6]->id, 'team_id' => $t3, 'role' => 'member', 'kartu_id' => $mediaKtm[6]]);
 
-        CompetitionSubmission::create([
-            'team_id' => '246b5f88-e848-4adb-a6eb-0726116c4d7a',
-            'competition_id' => 'HackToday',
-            'submission_object' => null,
+        // Tim 4: Pembayaran Ditolak (ITBrains, 2 Members)
+        $t4 = (string) Str::uuid();
+        Team::create([
+            'id' => $t4, 'competition_id' => 'ITBrains', 'team_name' => 'Tim Ditolak Uang', 'team_code' => 'T4-NMON', 'max_member' => 3,
+            'is_document_verified' => 1, 'is_verified' => 0, 'payment_proof_id' => $mediaPay[4],
+            'verification_error' => 'Nominal transfer kurang Rp 50.000',
         ]);
+        TeamMember::create(['user_id' => $peserta[7]->id, 'team_id' => $t4, 'role' => 'leader', 'kartu_id' => $mediaKtm[7]]);
+        TeamMember::create(['user_id' => $peserta[8]->id, 'team_id' => $t4, 'role' => 'member', 'kartu_id' => $mediaKtm[8]]);
+
+        // Tim 5: Lolos Sepenuhnya (HackToday, 1 Member)
+        $t5 = (string) Str::uuid();
+        Team::create([
+            'id' => $t5, 'competition_id' => 'HackToday', 'team_name' => 'Tim Valid 100%', 'team_code' => 'T5-FULL', 'max_member' => 3,
+            'is_document_verified' => 1, 'is_verified' => 1, 'payment_proof_id' => $mediaPay[5],
+        ]);
+        TeamMember::create(['user_id' => $peserta[9]->id, 'team_id' => $t5, 'role' => 'leader', 'kartu_id' => $mediaKtm[9]]);
+
+        // ==========================================
+        // OTHERS
+        // ==========================================
 
         EventTimeline::create([
             'id' => (string) Str::uuid(),
@@ -272,38 +270,9 @@ class DatabaseSeeder extends Seeder
 
         EventTimeline::create([
             'id' => (string) Str::uuid(),
-            'event_id' => 'HackToday',
-            'title' => 'Final Stage HackToday',
-            'date' => now()->addDays(30),
-        ]);
-
-        EventTimeline::create([
-            'id' => (string) Str::uuid(),
             'event_id' => 'UXToday',
             'title' => 'Open Registration UX Today',
             'date' => now()->addDays(7),
-        ]);
-
-        EventTimeline::create([
-            'id' => (string) Str::uuid(),
-            'event_id' => 'UXToday',
-            'title' => 'Close Registration UX Today',
-            'date' => now()->addDays(14),
-        ]);
-
-        EventTimeline::create([
-            'id' => (string) Str::uuid(),
-            'event_id' => 'UXToday',
-            'title' => 'Final Presentation UX Today',
-            'date' => now()->addDays(30),
-        ]);
-
-        EventParticipant::create([
-            'user_id' => $peserta1->id,
-            'event_id' => 'Seminar',
-            'date_added' => now(),
-            'payment_proof' => 'EDE6F334_proof.jpg',
-            'payment_verification' => 'pending',
         ]);
 
         EventAnnouncement::create([
@@ -311,17 +280,7 @@ class DatabaseSeeder extends Seeder
             'event_id' => 'Seminar',
             'author_id' => $superadminUser->id,
             'title' => 'Selamat Datang di IT Today 2026!',
-            'description' => 'Pendaftaran resmi untuk seluruh cabang lomba IT Today 2026 akan dibuka serentak pada minggu depan. Harap mempersiapkan berkas administrasi tim Anda.',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        EventAnnouncement::create([
-            'id' => (string) Str::uuid(),
-            'event_id' => 'HackToday',
-            'author_id' => $superadminUser->id,
-            'title' => 'Guidebook Resmi HackToday Dirilis',
-            'description' => 'Panduan lengkap regulasi kompetisi Capture the Flag (CTF) HackToday 2026 telah dapat diunduh pada menu guidebook di dashboard Anda.',
+            'description' => 'Pendaftaran resmi untuk seluruh cabang lomba IT Today 2026 akan dibuka serentak pada minggu depan.',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
