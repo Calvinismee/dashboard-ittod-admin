@@ -19,6 +19,11 @@ class ExportController extends Controller
         ]);
 
         $event    = Event::findOrFail($request->input('event_id'));
+
+        if (auth()->user()->role === 'panitia') {
+            abort_unless(auth()->user()->events->contains('id', $event->id), 403);
+        }
+
         $filename = 'rekap-tim-' . Str::slug($event->title) . '-' . now()->format('Y-m-d') . '.csv';
 
         return response()->stream(function () use ($event) {
@@ -37,6 +42,11 @@ class ExportController extends Controller
         ]);
 
         $event    = Event::findOrFail($request->input('event_id'));
+
+        if (auth()->user()->role === 'panitia') {
+            abort_unless(auth()->user()->events->contains('id', $event->id), 403);
+        }
+
         $filename = 'rekap-peserta-' . Str::slug($event->title) . '-' . now()->format('Y-m-d') . '.csv';
 
         return response()->stream(function () use ($event) {
