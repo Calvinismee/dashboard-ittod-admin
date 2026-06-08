@@ -180,6 +180,42 @@ class DatabaseSeeder extends Seeder
             'url' => 'https://google.com.id',
         ]);
 
+        Media::create([
+            'id' => '6b5d9f7a-8a2b-4e1f-b6de-53ac8f4f2d11',
+            'uploader_id' => $peserta1->id,
+            'name' => 'sample-payment-hacktoday-team-1',
+            'grouping' => 'payments',
+            'type' => 'image',
+            'url' => 'https://imgs.search.brave.com/ovc30iIHVFrFOT6vGzgKdfZIPgedEH89PFSjvvoAbpU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMTE1/OTYxMTcxMC9waG90/by9oYW5kLWZlZWxp/bmctZ3Jhc3MuanBn/P3M9NjEyeDYxMiZ3/PTAmaz0yMCZjPU8y/S3hGbzFkcFVFTHZI/V2VvWUtleTlycE5y/OFBCNHlpcHhSSEVl/VExWU2s9',
+        ]);
+
+        Media::create([
+            'id' => '766ababc-69a1-46e1-9b10-76ab7ad46721',
+            'uploader_id' => $peserta2->id,
+            'name' => 'sample-payment-hacktoday-team-2',
+            'grouping' => 'payments',
+            'type' => 'image',
+            'url' => 'https://imgs.search.brave.com/ovc30iIHVFrFOT6vGzgKdfZIPgedEH89PFSjvvoAbpU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMTE1/OTYxMTcxMC9waG90/by9oYW5kLWZlZWxp/bmctZ3Jhc3MuanBn/P3M9NjEyeDYxMiZ3/PTAmaz0yMCZjPU8y/S3hGbzFkcFVFTHZI/V2VvWUtleTlycE5y/OFBCNHlpcHhSSEVl/VExWU2s9',
+        ]);
+
+        Media::create([
+            'id' => 'f03d43d0-61ee-4e43-99ef-8431414b6d9c',
+            'uploader_id' => $peserta1->id,
+            'name' => 'sample-ktm-jokowi',
+            'grouping' => 'dokum_tahun_lalu',
+            'type' => 'image',
+            'url' => 'https://placehold.co/700x450/png?text=Contoh+KTM+Peserta+1',
+        ]);
+
+        Media::create([
+            'id' => '5f6f9e03-d309-4719-b762-df0f6ed53f4d',
+            'uploader_id' => $peserta2->id,
+            'name' => 'sample-ktm-lawan',
+            'grouping' => 'dokum_tahun_lalu',
+            'type' => 'image',
+            'url' => 'https://placehold.co/700x450/png?text=Contoh+KTM+Peserta+2',
+        ]);
+
         Team::create([
             'id' => '246b5f88-e848-4adb-a6eb-0726116c4d7a',
             'competition_id' => 'HackToday',
@@ -187,6 +223,7 @@ class DatabaseSeeder extends Seeder
             'team_code' => '8u2gUZmE',
             'max_member' => 3,
             'is_verified' => 0,
+            'payment_proof_id' => '6b5d9f7a-8a2b-4e1f-b6de-53ac8f4f2d11',
         ]);
 
         Team::create([
@@ -196,18 +233,21 @@ class DatabaseSeeder extends Seeder
             'team_code' => 'lBLcuYvn',
             'max_member' => 3,
             'is_verified' => 0,
+            'payment_proof_id' => '766ababc-69a1-46e1-9b10-76ab7ad46721',
         ]);
 
         TeamMember::create([
             'user_id' => $peserta1->id,
             'team_id' => '246b5f88-e848-4adb-a6eb-0726116c4d7a',
             'role' => 'leader',
+            'kartu_id' => 'f03d43d0-61ee-4e43-99ef-8431414b6d9c',
         ]);
 
         TeamMember::create([
             'user_id' => $peserta2->id,
             'team_id' => '4f433581-9da2-4d9b-b0b0-e523f7ec320a',
             'role' => 'leader',
+            'kartu_id' => '5f6f9e03-d309-4719-b762-df0f6ed53f4d',
         ]);
 
         CompetitionSubmission::create([
