@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\DB;
 
 class ParticipantRecapExport
 {
-    /**
-     * Kolom header CSV untuk rekap peserta non-kompetisi.
-     */
     public static array $headers = [
         'Event',
         'Nama Lengkap',
@@ -20,9 +17,6 @@ class ParticipantRecapExport
         'Status Pembayaran',
     ];
 
-    /**
-     * Pemetaan nilai enum payment_verification ke label Indonesia.
-     */
     private static array $paymentStatusMap = [
         'pending'  => 'Pending',
         'accepted' => 'Diterima',
@@ -30,10 +24,8 @@ class ParticipantRecapExport
     ];
 
     /**
-     * Tulis header dan seluruh baris data ke file handle yang diberikan.
-     *
-     * @param  resource  $handle     File handle dari fopen('php://output', 'w')
-     * @param  string|null  $eventId  UUID event; null = ekspor semua event (global)
+     * @param  resource  $handle
+     * @param  string|null  $eventId
      */
     public static function write($handle, ?string $eventId = null): void
     {

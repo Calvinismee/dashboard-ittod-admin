@@ -6,9 +6,6 @@ use App\Models\Team;
 
 class TeamRecapExport
 {
-    /**
-     * Kolom header CSV untuk rekap tim.
-     */
     public static array $headers = [
         'Event / Kompetisi',
         'Nama Tim',
@@ -24,10 +21,8 @@ class TeamRecapExport
     ];
 
     /**
-     * Tulis header dan seluruh baris data ke file handle yang diberikan.
-     *
-     * @param  resource  $handle     File handle dari fopen('php://output', 'w')
-     * @param  string|null  $eventId  UUID kompetisi; null = ekspor semua kompetisi (global)
+     * @param  resource  $handle
+     * @param  string|null  $eventId
      */
     public static function write($handle, ?string $eventId = null): void
     {

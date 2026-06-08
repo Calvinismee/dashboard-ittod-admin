@@ -11,15 +11,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportController extends Controller
 {
-    // -------------------------------------------------------------------------
-    // Per-event endpoints
-    // -------------------------------------------------------------------------
-
-    /**
-     * UC-07: Ekspor rekap tim untuk satu kompetisi tertentu.
-     *
-     * GET /export/teams?event_id={uuid}
-     */
     public function exportTeams(Request $request): StreamedResponse
     {
         $request->validate([
@@ -31,17 +22,12 @@ class ExportController extends Controller
 
         return response()->stream(function () use ($event) {
             $handle = fopen('php://output', 'w');
-            fwrite($handle, "\xEF\xBB\xBF"); // UTF-8 BOM agar Excel membaca karakter Indonesia dengan benar
+            fwrite($handle, "\xEF\xBB\xBF");
             TeamRecapExport::write($handle, $event->id);
             fclose($handle);
         }, 200, $this->buildCsvHeaders($filename));
     }
 
-    /**
-     * UC-07: Ekspor rekap peserta untuk satu event non-kompetisi tertentu.
-     *
-     * GET /export/participants?event_id={uuid}
-     */
     public function exportParticipants(Request $request): StreamedResponse
     {
         $request->validate([
@@ -59,15 +45,7 @@ class ExportController extends Controller
         }, 200, $this->buildCsvHeaders($filename));
     }
 
-    // -------------------------------------------------------------------------
-    // Global endpoints (semua event sekaligus, untuk Pimpinan)
-    // -------------------------------------------------------------------------
 
-    /**
-     * UC-07: Ekspor rekap tim dari seluruh kompetisi (global).
-     *
-     * GET /export/teams/global
-     */
     public function exportTeamsGlobal(): StreamedResponse
     {
         $filename = 'rekap-tim-semua-' . now()->format('Y-m-d') . '.csv';
@@ -80,11 +58,6 @@ class ExportController extends Controller
         }, 200, $this->buildCsvHeaders($filename));
     }
 
-    /**
-     * UC-07: Ekspor rekap peserta dari seluruh event non-kompetisi (global).
-     *
-     * GET /export/participants/global
-     */
     public function exportParticipantsGlobal(): StreamedResponse
     {
         $filename = 'rekap-peserta-semua-' . now()->format('Y-m-d') . '.csv';
@@ -97,13 +70,6 @@ class ExportController extends Controller
         }, 200, $this->buildCsvHeaders($filename));
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Buat array header HTTP standar untuk response unduhan CSV.
-     */
     private function buildCsvHeaders(string $filename): array
     {
         return [
