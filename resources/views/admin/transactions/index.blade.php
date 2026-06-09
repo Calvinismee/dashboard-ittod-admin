@@ -41,7 +41,6 @@
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-lg font-semibold text-gray-950">Antrean Tim</h2>
-                    <p class="mt-1 text-sm text-gray-600">Klik bukti transfer untuk membuka media `payment_proof_media_id`.</p>
                 </div>
             </div>
         </div>
@@ -76,7 +75,6 @@
                                 @if ($team->paymentProof)
                                     <div class="space-y-1">
                                         <p class="font-medium text-gray-950">{{ $team->paymentProof->name }}</p>
-                                        <p class="text-xs text-gray-500">payment_proof_media_id: {{ $team->payment_proof_id }}</p>
                                         @if ($team->payment_proof_url)
                                             <a href="{{ $team->payment_proof_url }}" target="_blank" rel="noopener" class="inline-flex items-center rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
                                                 Lihat Gambar

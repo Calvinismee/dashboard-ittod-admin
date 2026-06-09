@@ -22,7 +22,7 @@
                         </x-nav-link>
                     @endif
 
-                    <!-- Berkas, Timeline, Pengumuman, Agenda: Superadmin & Panitia -->
+                    <!-- Berkas, Timeline, Agenda: Superadmin & Panitia -->
                     @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'panitia']))
                         <x-nav-link :href="route('operation.teams.index')" :active="request()->routeIs('operation.teams.*') || request()->routeIs('admin.files-participants.*')">
                             {{ __('Berkas & Peserta') }}
@@ -30,6 +30,10 @@
                         <x-nav-link :href="route('admin.timelines.index')" :active="request()->routeIs('admin.timelines.*')">
                             {{ __('Timeline') }}
                         </x-nav-link>
+                    @endif
+
+                    <!-- Pengumuman: All admin staff roles -->
+                    @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
                         <x-nav-link :href="route('admin.announcements.index')" :active="request()->routeIs('admin.announcements.*')">
                             {{ __('Pengumuman') }}
                         </x-nav-link>
@@ -115,6 +119,9 @@
                 <x-responsive-nav-link :href="route('admin.timelines.index')" :active="request()->routeIs('admin.timelines.*')">
                     {{ __('Timeline') }}
                 </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
                 <x-responsive-nav-link :href="route('admin.announcements.index')" :active="request()->routeIs('admin.announcements.*')">
                     {{ __('Pengumuman') }}
                 </x-responsive-nav-link>

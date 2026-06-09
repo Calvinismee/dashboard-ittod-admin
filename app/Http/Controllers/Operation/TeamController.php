@@ -11,7 +11,7 @@ class TeamController extends Controller
 {
     // Menampilkan daftar semua tim (UC-04)
     public function index() {
-        abort_unless(in_array(auth()->user()->role, ['superadmin', 'panitia', 'admin_keuangan']), 403);
+        abort_unless(in_array(auth()->user()->role, ['superadmin', 'panitia'], true), 403);
         
         $query = Team::with(['event', 'members.user']);
         
@@ -25,7 +25,7 @@ class TeamController extends Controller
 
     // Melihat detail berkas identitas (REQ-08)
     public function show(string $id) {
-        abort_unless(in_array(auth()->user()->role, ['superadmin', 'panitia', 'admin_keuangan']), 403);
+        abort_unless(in_array(auth()->user()->role, ['superadmin', 'panitia'], true), 403);
         $team = Team::with(['event', 'members.user', 'members.kartu', 'paymentProof'])->findOrFail($id);
         
         if (auth()->user()->role === 'panitia') {
@@ -37,8 +37,8 @@ class TeamController extends Controller
 
     // Mengubah status verifikasi berkas tim (REQ-08)
     public function updateStatus(Request $request, string $id) {
-        abort_unless(in_array(auth()->user()->role, ['superadmin', 'panitia']), 403);
-        $team = Team::findOrFail($id);
+        abort_unless(in_array(auth()->user()->role, ['superadmin', 'panitia'], true), 403);
+        $team = Team::with('members')->findOrFail($id);
         
         if (auth()->user()->role === 'panitia') {
             abort_unless(auth()->user()->events->contains('id', $team->competition_id), 403);
@@ -48,6 +48,19 @@ class TeamController extends Controller
             'is_document_verified' => 'required|in:0,1',
             'verification_error' => 'required_if:is_document_verified,0|nullable|string',
         ]);
+
+        if ((int) $request->is_document_verified === 1) {
+            $membersWithErrors = $team->members
+                ->filter(fn (TeamMember $member) => filled($member->verification_error));
+
+            if ($membersWithErrors->isNotEmpty()) {
+                return back()
+                    ->withErrors([
+                        'is_document_verified' => 'Berkas tim belum bisa disetujui karena masih ada catatan kesalahan anggota. Kosongkan catatan anggota yang sudah diperbaiki, lalu setujui kembali.',
+                    ])
+                    ->withInput();
+            }
+        }
 
         $team->update([
             'is_document_verified' => (int) $request->is_document_verified,
@@ -61,23 +74,35 @@ class TeamController extends Controller
 
     // Mengubah status verifikasi dokumen anggota secara individual
     public function updateMemberStatus(Request $request, string $teamId, string $userId) {
-        abort_unless(in_array(auth()->user()->role, ['superadmin', 'panitia']), 403);
+        abort_unless(in_array(auth()->user()->role, ['superadmin', 'panitia'], true), 403);
         $member = TeamMember::where('team_id', $teamId)
             ->where('user_id', $userId)
             ->firstOrFail();
 
+        $team = Team::findOrFail($teamId);
+
         if (auth()->user()->role === 'panitia') {
-            $team = Team::findOrFail($teamId);
             abort_unless(auth()->user()->events->contains('id', $team->competition_id), 403);
         }
 
         $request->validate([
-            'verification_error' => 'nullable|string',
+            'action' => 'required|in:approve,reject',
+            'verification_error' => 'required_if:action,reject|nullable|string|max:1000',
         ]);
 
+        $verificationError = $request->action === 'reject' && filled($request->verification_error)
+            ? trim($request->verification_error)
+            : null;
+
         $member->update([
-            'verification_error' => $request->verification_error
+            'verification_error' => $verificationError
         ]);
+
+        if (filled($verificationError) && $team->is_document_verified) {
+            $team->update([
+                'is_document_verified' => 0,
+            ]);
+        }
 
         return back()->with('success', 'Status verifikasi dokumen anggota berhasil diperbarui!');
     }

@@ -56,7 +56,9 @@ class Team extends Model
      */
     public function members(): HasMany
     {
-        return $this->hasMany(TeamMember::class, 'team_id', 'id');
+        return $this->hasMany(TeamMember::class, 'team_id', 'id')
+            ->orderByRaw("CASE WHEN role = 'leader' THEN 0 ELSE 1 END")
+            ->orderBy('user_id');
     }
 
     /**

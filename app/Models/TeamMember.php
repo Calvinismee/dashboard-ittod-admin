@@ -26,6 +26,15 @@ class TeamMember extends Model
         'kartu_id',
     ];
 
+    protected function setKeysForSaveQuery($query)
+    {
+        foreach ((array) $this->getKeyName() as $keyName) {
+            $query->where($keyName, '=', $this->getAttribute($keyName));
+        }
+
+        return $query;
+    }
+
     /**
      * Get the team associated with the team member.
      */

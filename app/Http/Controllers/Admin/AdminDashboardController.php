@@ -41,7 +41,7 @@ class AdminDashboardController extends Controller
 
     public function staff(): View
     {
-        abort_unless($this->isAdminStaff(), 403);
+        $this->ensureSuperadmin();
 
         return view('admin.staff.index', [
             'staffAccounts' => UserIdentity::with(['user', 'events'])
@@ -272,7 +272,8 @@ class AdminDashboardController extends Controller
 
         return view('admin.timelines.index', [
             'events' => $query->get(),
-            'canManageTimelines' => $user->role === 'superadmin',
+            'canManageCompetitions' => $user->role === 'superadmin',
+            'canManageTimelines' => in_array($user->role, ['superadmin', 'panitia'], true),
         ]);
     }
 
@@ -294,7 +295,7 @@ class AdminDashboardController extends Controller
             'event' => $event->load(['timelines' => fn ($query) => $query->orderBy('date')])
                 ->loadCount('teams'),
             'events' => $eventsQuery->get(),
-            'canManageTimelines' => auth()->user()?->role === 'superadmin',
+            'canManageTimelines' => in_array(auth()->user()?->role, ['superadmin', 'panitia'], true),
         ]);
     }
 
@@ -360,9 +361,10 @@ class AdminDashboardController extends Controller
 
     public function storeTimeline(Request $request): RedirectResponse
     {
-        $this->ensureSuperadmin();
+        $this->ensureCompetitionTimelineManager();
 
         $validated = $this->validateCompetitionTimeline($request);
+        $this->abortIfUnassignedPanitia($validated['event_id']);
 
         EventTimeline::create($validated);
 
@@ -371,10 +373,12 @@ class AdminDashboardController extends Controller
 
     public function updateTimeline(Request $request, EventTimeline $timeline): RedirectResponse
     {
-        $this->ensureSuperadmin();
+        $this->ensureCompetitionTimelineManager();
         $this->abortUnlessCompetitionTimeline($timeline);
+        $this->abortIfUnassignedPanitia($timeline->event_id);
 
         $validated = $this->validateCompetitionTimeline($request);
+        $this->abortIfUnassignedPanitia($validated['event_id']);
 
         $timeline->update($validated);
 
@@ -383,8 +387,9 @@ class AdminDashboardController extends Controller
 
     public function destroyTimeline(EventTimeline $timeline): RedirectResponse
     {
-        $this->ensureSuperadmin();
+        $this->ensureCompetitionTimelineManager();
         $this->abortUnlessCompetitionTimeline($timeline);
+        $this->abortIfUnassignedPanitia($timeline->event_id);
 
         $timeline->delete();
 
@@ -393,7 +398,7 @@ class AdminDashboardController extends Controller
 
     public function announcements(): View
     {
-        abort_unless(in_array(auth()->user()?->role, ['superadmin', 'panitia']), 403);
+        abort_unless($this->isAdminStaff(), 403);
         
         $user = auth()->user();
         $eventsQuery = Event::orderBy('title');
@@ -491,9 +496,21 @@ class AdminDashboardController extends Controller
         abort_unless(auth()->user()?->role === 'superadmin', 403);
     }
 
+    private function ensureCompetitionTimelineManager(): void
+    {
+        abort_unless(in_array(auth()->user()?->role, ['superadmin', 'panitia'], true), 403);
+    }
+
     private function isAdminStaff(): bool
     {
         return in_array(auth()->user()?->role, ['superadmin', 'admin_keuangan', 'panitia'], true);
+    }
+
+    private function abortIfUnassignedPanitia(string $eventId): void
+    {
+        if (auth()->user()?->role === 'panitia') {
+            abort_unless(auth()->user()->events->contains('id', $eventId), 403);
+        }
     }
 
     private function abortIfLastSuperadmin(UserIdentity $staff): void

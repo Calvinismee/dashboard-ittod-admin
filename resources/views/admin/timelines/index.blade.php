@@ -2,7 +2,7 @@
     title="Pengaturan Timeline Kompetisi"
     subtitle="Kelola fase pendaftaran, submission, penjurian, dan final khusus event lomba."
 >
-    @if ($canManageTimelines)
+    @if ($canManageCompetitions)
         <div class="mb-6 flex justify-end">
             <button
                 type="button"
@@ -15,7 +15,7 @@
         </div>
     @endif
 
-    @if ($canManageTimelines && $errors->any())
+    @if (($canManageCompetitions || $canManageTimelines) && $errors->any())
         <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <p class="font-semibold">Timeline belum bisa disimpan.</p>
             <ul class="mt-2 list-disc space-y-1 pl-5">
@@ -65,7 +65,7 @@
                         <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Tim</th>
                         <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Selengkapnya</th>
-                        @if ($canManageTimelines)
+                        @if ($canManageCompetitions)
                             <th class="px-6 py-3 text-right text-xs font-bold uppercase text-gray-600">Aksi</th>
                         @endif
                     </tr>
@@ -97,7 +97,7 @@
                                     Lihat Detail
                                 </a>
                             </td>
-                            @if ($canManageTimelines)
+                            @if ($canManageCompetitions)
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex flex-col items-end gap-2">
                                         <button
@@ -137,7 +137,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canManageTimelines ? 6 : 5 }}" class="px-6 py-10 text-center text-sm text-gray-600">Belum ada event kompetisi.</td>
+                            <td colspan="{{ $canManageCompetitions ? 6 : 5 }}" class="px-6 py-10 text-center text-sm text-gray-600">Belum ada event kompetisi.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -145,7 +145,7 @@
         </div>
     </section>
 
-    @if ($canManageTimelines)
+    @if ($canManageCompetitions)
     <x-modal name="create-competition" maxWidth="2xl" focusable>
         <form method="POST" action="{{ route('admin.competitions.store') }}" class="p-6">
             @csrf
