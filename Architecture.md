@@ -1,0 +1,361 @@
+# Architecture
+
+Dokumen ini merangkum implementasi Admin Dashboard Portal IT Today berdasarkan use case multi-role: Superadmin, Admin Keuangan, dan Panitia Lomba.
+
+## Ringkasan Sistem
+
+Aplikasi adalah dashboard admin Laravel dengan Blade, Alpine.js, dan Tailwind CSS. Auth menggunakan model `App\Models\UserIdentity` sebagai authenticatable user, sedangkan profil pengguna berada di `App\Models\User`.
+
+Modul utama:
+
+- Manajemen akun staff
+- Verifikasi pembayaran tim
+- Rekap transaksi
+- Kelola data dan berkas tim
+- Kelola timeline kompetisi dan agenda seminar
+- Publish pengumuman dashboard
+- Export rekapitulasi CSV
+
+## Role Dan Use Case
+
+| Use Case | Superadmin | Admin Keuangan | Panitia Lomba |
+| --- | --- | --- | --- |
+| UC-01 Kelola Akun & Data Staff | Ya | Tidak | Tidak |
+| UC-02 Verifikasi Pembayaran Tim | Ya | Ya | Tidak |
+| UC-03 Lihat Rekap Transaksi | Ya | Ya | Tidak |
+| UC-04 Kelola Data & Berkas Tim | Ya | Tidak | Ya |
+| UC-05 Kelola Lini Masa Kompetisi | Ya | Tidak | Ya |
+| UC-06 Publish Pengumuman Dashboard | Ya | Ya | Ya |
+| UC-07 Ekspor Rekapitulasi Data CSV | Ya | Ya | Ya |
+| UC-08 Input Alasan Penolakan | Ya | Ya untuk transaksi, Panitia untuk berkas | Ya untuk berkas |
+| UC-09 Login Multi-Role | Ya | Ya | Ya |
+
+## Auth Dan Role
+
+Role disimpan di tabel `user_identity.role` dengan nilai:
+
+- `superadmin`
+- `admin_keuangan`
+- `panitia`
+- `user`
+
+Model auth:
+
+- `App\Models\UserIdentity`
+- Provider auth Laravel diarahkan ke `App\Models\UserIdentity` di `config/auth.php`.
+- `UserIdentity` memiliki relasi `user()` ke profil `App\Models\User`.
+- `UserIdentity` memiliki relasi `events()` ke event yang ditugaskan melalui tabel pivot `event_staff`.
+
+## Routing
+
+File utama: `routes/web.php`.
+
+Route utama:
+
+- `/dashboard`: dashboard staff yang sudah login dan verified.
+- `/admin/staff`: manajemen staff, dikunci di controller untuk superadmin.
+- `/admin/transactions`: verifikasi transaksi untuk superadmin dan admin keuangan.
+- `/operation/teams`: kelola data dan berkas tim untuk superadmin dan panitia.
+- `/admin/timelines`: daftar timeline kompetisi untuk superadmin dan panitia.
+- `/admin/timelines/{event}/agenda`: agenda kompetisi untuk superadmin dan panitia yang ditugaskan.
+- `/admin/announcements`: pengumuman untuk semua role staff.
+- `/export/*`: export CSV, dikunci di `ExportController`.
+
+Catatan: route group menggunakan `auth` dan `verified` pada area admin, sedangkan pembatasan role mayoritas dilakukan di controller dengan `abort_unless(...)`.
+
+## Controller
+
+### `AdminDashboardController`
+
+Tanggung jawab:
+
+- Dashboard admin.
+- Manajemen staff.
+- Transaksi admin panel.
+- Direktori file dan peserta.
+- Timeline kompetisi.
+- Pengumuman.
+
+Pembatasan akses penting:
+
+- `staff()`, `storeStaff()`, `showStaff()`, `updateStaff()`, `destroyStaff()` hanya untuk superadmin.
+- `transactions()`, `acceptTransaction()`, `rejectTransaction()` hanya untuk superadmin dan admin keuangan.
+- `filesParticipants()`, `files()`, `timelines()`, `timelineAgenda()` hanya untuk superadmin dan panitia.
+- `storeTimeline()`, `updateTimeline()`, `destroyTimeline()` untuk superadmin dan panitia, dengan panitia dibatasi hanya event yang ditugaskan.
+- `announcements()`, `storeAnnouncement()`, `updateAnnouncement()`, `destroyAnnouncement()` untuk semua staff, dengan panitia dibatasi hanya event yang ditugaskan.
+
+### `Operation\TeamController`
+
+Tanggung jawab:
+
+- Daftar tim.
+- Detail tim dan berkas.
+- Verifikasi berkas tim.
+- Catatan verifikasi dokumen anggota.
+
+Pembatasan akses:
+
+- `index()` dan `show()` hanya untuk superadmin dan panitia.
+- `updateStatus()` dan `updateMemberStatus()` hanya untuk superadmin dan panitia.
+- Panitia hanya bisa mengakses tim dari event yang ditugaskan lewat `event_staff`.
+
+### `Operation\TimelineController`
+
+Tanggung jawab:
+
+- CRUD timeline kegiatan non-kompetisi atau agenda seminar.
+- Akses untuk superadmin dan panitia.
+- Panitia hanya bisa mengelola event yang ditugaskan.
+
+### `TransactionController`
+
+Tanggung jawab:
+
+- Endpoint JSON verifikasi transaksi.
+- Endpoint JSON rekap transaksi.
+
+Pembatasan akses:
+
+- `verify()` hanya untuk superadmin dan admin keuangan.
+- `getRecap()` hanya untuk superadmin dan admin keuangan.
+- Reject transaksi mewajibkan `verification_error`.
+
+### `ExportController`
+
+Tanggung jawab:
+
+- Export rekap tim per event.
+- Export rekap peserta per event.
+- Export rekap tim global.
+- Export rekap peserta global.
+
+Pembatasan akses:
+
+- Per-event: superadmin, admin keuangan, dan panitia.
+- Panitia hanya bisa export event yang ditugaskan.
+- Global: superadmin dan admin keuangan.
+
+## Model Dan Relasi
+
+### `UserIdentity`
+
+Tabel: `user_identity`
+
+Relasi:
+
+- `user()`: profil user.
+- `events()`: event yang ditugaskan ke staff melalui `event_staff`.
+
+### `User`
+
+Tabel: `user`
+
+Relasi:
+
+- `identity()`
+- `media()`
+- `teams()`
+- `events()`
+
+### `Event`
+
+Tabel: `event`
+
+Relasi:
+
+- `teams()`
+- `timelines()`
+- `announcements()`
+- `participants()`
+- `staff()`
+
+### `Team`
+
+Tabel: `team`
+
+Relasi:
+
+- `event()`
+- `paymentProof()`
+- `members()`
+- `users()`
+- `submissions()`
+
+Field penting:
+
+- `is_document_verified`: status verifikasi dokumen/berkas tim.
+- `is_verified`: status pembayaran/transaksi.
+- `verification_error`: alasan penolakan.
+- `payment_proof_id`: media bukti bayar.
+
+### `TeamMember`
+
+Tabel: `team_member`
+
+Relasi:
+
+- `user()`
+- `team()`
+- `kartu()`
+
+Field penting:
+
+- `role`
+- `verification_error`
+- `kartu_id`
+
+### `Media`
+
+Tabel: `media`
+
+Dipakai untuk:
+
+- Bukti pembayaran.
+- Kartu identitas/KTM.
+- Dokumen submission.
+- Twibbon atau file audit lain.
+
+## Staff Management
+
+Halaman: `/admin/staff`
+
+Fitur:
+
+- Superadmin dapat membuat staff baru.
+- Superadmin dapat mengedit staff.
+- Superadmin dapat menghapus staff, kecuali akun sendiri.
+- Minimal harus ada satu superadmin.
+- Edit staff melakukan fetch detail terbaru melalui `GET /admin/staff/{staff}` sebelum modal dibuka.
+- Field "Kompetisi yang dikelola" hanya dirender untuk role `panitia`.
+- Role `admin_keuangan` dan `superadmin` tidak menyimpan assignment event.
+
+## Pengumuman
+
+Halaman: `/admin/announcements`
+
+Fitur:
+
+- Superadmin, admin keuangan, dan panitia dapat membuka halaman pengumuman.
+- Superadmin dan admin keuangan dapat mengelola pengumuman untuk semua event.
+- Panitia hanya dapat melihat dan mengelola pengumuman pada event yang ditugaskan.
+
+## Timeline Kompetisi
+
+Halaman:
+
+- `/admin/timelines`
+- `/admin/timelines/{event}/agenda`
+
+Fitur:
+
+- Superadmin dapat mengelola master kompetisi.
+- Superadmin dan panitia dapat mengelola agenda timeline kompetisi.
+- Panitia hanya dapat mengelola agenda pada kompetisi yang ditugaskan.
+
+## Data Dan Berkas Tim
+
+Halaman:
+
+- `/operation/teams`
+- `/operation/teams/{id}`
+
+Fitur:
+
+- Superadmin dan panitia dapat melihat daftar tim dan detail berkas.
+- Panitia hanya melihat tim dari event yang ditugaskan.
+- Penolakan verifikasi berkas tim membutuhkan alasan.
+- Jika alasan penolakan kosong, UI menampilkan pesan inline tanpa native JavaScript alert.
+- Tim tidak bisa disetujui selama masih ada catatan kesalahan pada dokumen anggota.
+- Setelah peserta memperbarui berkas, panitia menekan `Setuju` pada anggota yang sudah valid untuk mengosongkan catatan kesalahan, lalu menyetujui ulang berkas tim.
+- Tombol `Tolak` pada anggota wajib menyertakan catatan kesalahan.
+- Kartu anggota menampilkan ketua di urutan paling atas dan menyediakan dropdown data lengkap peserta.
+
+## Transaksi
+
+Halaman:
+
+- `/admin/transactions`
+
+Endpoint JSON:
+
+- `POST /transaction/{teamId}/verify`
+- `GET /transaction/recap`
+
+Fitur:
+
+- Superadmin dan admin keuangan dapat memverifikasi pembayaran.
+- Reject pembayaran membutuhkan alasan penolakan.
+- Rekap transaksi menghitung akumulasi dana dari tim yang sudah diterima.
+
+## Export CSV
+
+Route:
+
+- `GET /export/teams?event_id=...`
+- `GET /export/participants?event_id=...`
+- `GET /export/teams/global`
+- `GET /export/participants/global`
+
+Implementasi:
+
+- `App\Exports\TeamRecapExport`
+- `App\Exports\ParticipantRecapExport`
+- `ExportController`
+
+Detail:
+
+- Response menggunakan streamed CSV.
+- CSV diberi UTF-8 BOM agar lebih aman dibuka di spreadsheet.
+- Header `Content-Disposition` memaksa download file `.csv`.
+
+## Seeder
+
+Seeder utama: `database/seeders/DatabaseSeeder.php`.
+
+Data yang dibuat:
+
+- Event kompetisi: HackToday, UX Today, IT-Brains, GameToday.
+- Event non-kompetisi: Seminar Nasional IT Today.
+- Akun superadmin, admin keuangan, panitia, dan peserta.
+- Tim dan team member.
+- Media PDF dummy.
+- Media image contoh untuk bukti pembayaran.
+- Media image contoh untuk KTM/kartu identitas.
+- Timeline event.
+- Event participant.
+- Pengumuman awal.
+
+## UI
+
+Komponen utama:
+
+- Blade layout `resources/views/layouts/app.blade.php`
+- Navigation `resources/views/layouts/navigation.blade.php`
+- Admin layout `resources/views/components/admin/layout.blade.php`
+
+Interaksi frontend:
+
+- Alpine.js untuk modal, search table, fetch detail staff, dan validasi inline.
+- Tailwind CSS untuk styling.
+
+## Validasi Dan Guard
+
+Guard penting:
+
+- `auth`
+- `verified`
+- `data_frozen`
+
+Validasi role saat ini dilakukan terutama di controller:
+
+- `ensureSuperadmin()`
+- `isAdminStaff()`
+- `ensureCompetitionTimelineManager()`
+- pengecekan role inline dengan `abort_unless(...)`
+- pembatasan panitia melalui `event_staff`
+
+## Catatan Teknis
+
+- `bootstrap/app.php` baru mendaftarkan middleware `data_frozen`. Role guard belum dibuat sebagai middleware reusable, sehingga pembatasan role masih tersebar di controller.
+- PHPUnit di environment ini belum bisa dijalankan penuh karena driver SQLite tidak tersedia.
+- Route cache dan Blade cache perlu dibersihkan setelah perubahan UI/route: `php artisan route:clear`, `php artisan view:clear`.

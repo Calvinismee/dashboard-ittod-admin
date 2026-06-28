@@ -24,13 +24,14 @@ class Team extends Model
         'team_name',
         'team_code',
         'max_member',
+        'is_document_verified',
         'is_verified',
         'verification_error',
         'payment_proof_id',
     ];
 
     protected $casts = [
-        'is_verified' => 'boolean',
+        'is_verified' => 'integer',
         'max_member' => 'integer',
     ];
 
@@ -55,7 +56,9 @@ class Team extends Model
      */
     public function members(): HasMany
     {
-        return $this->hasMany(TeamMember::class, 'team_id', 'id');
+        return $this->hasMany(TeamMember::class, 'team_id', 'id')
+            ->orderByRaw("CASE WHEN role = 'leader' THEN 0 ELSE 1 END")
+            ->orderBy('user_id');
     }
 
     /**
