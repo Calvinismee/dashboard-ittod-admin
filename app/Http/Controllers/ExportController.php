@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\ParticipantRecapExport;
 use App\Exports\TeamRecapExport;
+use App\Exports\UserExport;
 use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -80,6 +81,26 @@ class ExportController extends Controller
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
             ParticipantRecapExport::write($handle, null);
+            fclose($handle);
+        }, 200, $this->buildCsvHeaders($filename));
+    }
+
+    public function exportUsersGlobal(): StreamedResponse
+    {
+        $userRole = auth()->user()->role;
+        abort_unless(in_array($userRole, ['superadmin', 'admin_keuangan', 'panitia']), 403);
+        $filename = 'rekap-pengguna-umum-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->stream(function () use ($userRole) {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            
+            $eventIds = null;
+            if ($userRole === 'panitia') {
+                $eventIds = auth()->user()->events->pluck('id')->toArray();
+            }
+            
+            UserExport::write($handle, $eventIds);
             fclose($handle);
         }, 200, $this->buildCsvHeaders($filename));
     }

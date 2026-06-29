@@ -22,22 +22,31 @@
                         </x-nav-link>
                     @endif
 
+                    <!-- Peserta Umum: Superadmin, Admin Keuangan, Panitia -->
+                    @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
+                        <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                            {{ __('Peserta Umum') }}
+                        </x-nav-link>
+                    @endif
+
+                    <!-- Verifikasi Event Non-Kompetisi: Superadmin, Admin Keuangan -->
+                    @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan']))
+                        <x-nav-link :href="route('admin.event-participants.index')" :active="request()->routeIs('admin.event-participants.*')">
+                            {{ __('Peserta Event Non-Kompetisi') }}
+                        </x-nav-link>
+                    @endif
+
                     <!-- Berkas, Timeline, Agenda: Superadmin & Panitia -->
                     @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'panitia']))
                         <x-nav-link :href="route('operation.teams.index')" :active="request()->routeIs('operation.teams.*') || request()->routeIs('admin.files-participants.*')">
                             {{ __('Berkas & Peserta') }}
                         </x-nav-link>
                         <x-nav-link :href="route('admin.timelines.index')" :active="request()->routeIs('admin.timelines.*')">
-                            {{ __('Timeline') }}
+                            {{ Auth::user()->role === 'superadmin' ? __('Kelola Event dan Kompetisi') : __('Kelola Kompetisi') }}
                         </x-nav-link>
                     @endif
 
-                    <!-- Pengumuman: All admin staff roles -->
-                    @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
-                        <x-nav-link :href="route('admin.announcements.index')" :active="request()->routeIs('admin.announcements.*')">
-                            {{ __('Pengumuman') }}
-                        </x-nav-link>
-                    @endif
+
 
                     @php
                         $user = Auth::user();
@@ -45,7 +54,7 @@
                     @endphp
                     @if(Auth::check() && ($user->role === 'superadmin' || $isSeminarPanitia))
                         <x-nav-link :href="route('timeline.index')" :active="request()->routeIs('timeline.*')">
-                            {{ __('Agenda Seminar') }}
+                            {{ __('Kelola Timeline Event') }}
                         </x-nav-link>
                     @endif
 
@@ -53,6 +62,13 @@
                     @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan']))
                         <x-nav-link :href="route('admin.transactions.index')" :active="request()->routeIs('admin.transactions.*')">
                             {{ __('Transaksi') }}
+                        </x-nav-link>
+                    @endif
+
+                    <!-- Pengumuman: All admin staff roles -->
+                    @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
+                        <x-nav-link :href="route('admin.announcements.index')" :active="request()->routeIs('admin.announcements.*')">
+                            {{ __('Pengumuman') }}
                         </x-nav-link>
                     @endif
                 </div>
@@ -112,20 +128,28 @@
                 </x-responsive-nav-link>
             @endif
 
+            @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
+                <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                    {{ __('Peserta Umum') }}
+                </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan']))
+                <x-responsive-nav-link :href="route('admin.event-participants.index')" :active="request()->routeIs('admin.event-participants.*')">
+                    {{ __('Peserta Event Non-Kompetisi') }}
+                </x-responsive-nav-link>
+            @endif
+
             @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'panitia']))
                 <x-responsive-nav-link :href="route('operation.teams.index')" :active="request()->routeIs('operation.teams.*') || request()->routeIs('admin.files-participants.*')">
                     {{ __('Berkas & Peserta') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.timelines.index')" :active="request()->routeIs('admin.timelines.*')">
-                    {{ __('Timeline') }}
+                    {{ Auth::user()->role === 'superadmin' ? __('Kelola Event dan Kompetisi') : __('Kelola Kompetisi') }}
                 </x-responsive-nav-link>
             @endif
 
-            @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
-                <x-responsive-nav-link :href="route('admin.announcements.index')" :active="request()->routeIs('admin.announcements.*')">
-                    {{ __('Pengumuman') }}
-                </x-responsive-nav-link>
-            @endif
+
 
             @php
                 $user = Auth::user();
@@ -133,13 +157,19 @@
             @endphp
             @if(Auth::check() && ($user->role === 'superadmin' || $isSeminarPanitia))
                 <x-responsive-nav-link :href="route('timeline.index')" :active="request()->routeIs('timeline.*')">
-                    {{ __('Agenda Seminar') }}
+                    {{ __('Kelola Timeline Event') }}
                 </x-responsive-nav-link>
             @endif
 
             @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan']))
                 <x-responsive-nav-link :href="route('admin.transactions.index')" :active="request()->routeIs('admin.transactions.*')">
                     {{ __('Transaksi') }}
+                </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
+                <x-responsive-nav-link :href="route('admin.announcements.index')" :active="request()->routeIs('admin.announcements.*')">
+                    {{ __('Pengumuman') }}
                 </x-responsive-nav-link>
             @endif
         </div>

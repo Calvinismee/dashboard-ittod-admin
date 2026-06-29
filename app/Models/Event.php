@@ -29,10 +29,12 @@ class Event extends Model
         'contact_person2',
         'max_noncompetition_participant',
         'price',
+        'requires_submission',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'requires_submission' => 'boolean',
         'price' => 'integer',
         'max_noncompetition_participant' => 'integer',
     ];
@@ -51,6 +53,14 @@ class Event extends Model
     public function timelines(): HasMany
     {
         return $this->hasMany(EventTimeline::class, 'event_id', 'id');
+    }
+
+    /**
+     * Get the submissions for this event.
+     */
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(CompetitionSubmission::class, 'competition_id', 'id');
     }
 
     /**

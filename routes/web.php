@@ -9,7 +9,7 @@ use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 Route::get('/dashboard', [AdminDashboardController::class, 'dashboard'])
@@ -52,13 +52,19 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/staff/{staff}', [AdminDashboardController::class, 'showStaff'])->name('staff.show');
         Route::patch('/staff/{staff}', [AdminDashboardController::class, 'updateStaff'])->name('staff.update');
         Route::delete('/staff/{staff}', [AdminDashboardController::class, 'destroyStaff'])->name('staff.destroy');
+        Route::get('/users', [AdminDashboardController::class, 'users'])->name('users.index');
         Route::get('/transactions', [AdminDashboardController::class, 'transactions'])->name('transactions.index');
         Route::patch('/transactions/{team}/accept', [AdminDashboardController::class, 'acceptTransaction'])->name('transactions.accept');
         Route::patch('/transactions/{team}/reject', [AdminDashboardController::class, 'rejectTransaction'])->name('transactions.reject');
+        
+        Route::get('/event-participants', [\App\Http\Controllers\Admin\EventParticipantController::class, 'index'])->name('event-participants.index');
+        Route::post('/event-participants/verify', [\App\Http\Controllers\Admin\EventParticipantController::class, 'verify'])->name('event-participants.verify');
+
         Route::get('/files-participants', [AdminDashboardController::class, 'filesParticipants'])->name('files-participants.index');
         Route::get('/files', [AdminDashboardController::class, 'files'])->name('files.index');
         Route::post('/competitions', [AdminDashboardController::class, 'storeCompetition'])->name('competitions.store');
         Route::patch('/competitions/{event}', [AdminDashboardController::class, 'updateCompetition'])->name('competitions.update');
+        Route::patch('/competitions/{event}/panitia-details', [AdminDashboardController::class, 'updatePanitiaDetails'])->name('competitions.panitia-details');
         Route::patch('/competitions/{event}/status', [AdminDashboardController::class, 'toggleCompetitionStatus'])->name('competitions.status');
         Route::delete('/competitions/{event}', [AdminDashboardController::class, 'destroyCompetition'])->name('competitions.destroy');
         Route::get('/timelines', [AdminDashboardController::class, 'timelines'])->name('timelines.index');
@@ -85,6 +91,7 @@ Route::middleware('auth')->prefix('export')->name('export.')->group(function () 
     // Global (semua event sekaligus, biasanya untuk Pimpinan)
     Route::get('/teams/global', [ExportController::class, 'exportTeamsGlobal'])->name('teams.global');
     Route::get('/participants/global', [ExportController::class, 'exportParticipantsGlobal'])->name('participants.global');
+    Route::get('/users/global', [ExportController::class, 'exportUsersGlobal'])->name('users.global');
 });
 
 require __DIR__.'/auth.php';

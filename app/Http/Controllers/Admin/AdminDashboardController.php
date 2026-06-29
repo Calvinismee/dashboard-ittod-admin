@@ -25,8 +25,13 @@ class AdminDashboardController extends Controller
     public function dashboard(): View
     {
         abort_unless($this->isAdminStaff(), 403);
-        return view('admin.dashboard', [
-            'stats' => [
+        
+        $user = auth()->user();
+        $role = $user->role;
+
+        $globalStats = null;
+        if (in_array($role, ['superadmin', 'admin_keuangan'])) {
+            $globalStats = [
                 'events' => Event::count(),
                 'teams' => Team::count(),
                 'pendingTransactions' => Team::where('is_verified', false)
@@ -35,7 +40,35 @@ class AdminDashboardController extends Controller
                 'rejectedTransactions' => Team::where('is_verified', false)
                     ->whereNotNull('verification_error')
                     ->count(),
-            ],
+            ];
+        }
+
+        $competitions = null;
+        if (in_array($role, ['superadmin', 'panitia'])) {
+            $query = Event::where('type', 'competition')->orderBy('title');
+            if ($role === 'panitia') {
+                $query->whereIn('id', $user->events->pluck('id'));
+            }
+
+            $competitions = $query->withCount([
+                'teams as total_teams',
+                'teams as verified_teams' => function ($q) {
+                    $q->where('is_verified', true);
+                },
+                'teams as pending_teams' => function ($q) {
+                    $q->where('is_verified', false)->whereNull('verification_error');
+                },
+                'teams as rejected_teams' => function ($q) {
+                    $q->where('is_verified', false)->whereNotNull('verification_error');
+                },
+                'submissions as submitted_teams'
+            ])->get();
+        }
+
+        return view('admin.dashboard', [
+            'globalStats' => $globalStats,
+            'competitions' => $competitions,
+            'userRole' => $role,
         ]);
     }
 
@@ -183,6 +216,31 @@ class AdminDashboardController extends Controller
         return back()->with('status', 'Akun staff berhasil dihapus.');
     }
 
+    public function users(): View
+    {
+        $userRole = auth()->user()?->role;
+        abort_unless(in_array($userRole, ['superadmin', 'admin_keuangan', 'panitia']), 403);
+
+        $query = UserIdentity::with('user')->where('role', 'user');
+
+        if ($userRole === 'panitia') {
+            $eventIds = auth()->user()->events->pluck('id');
+            $query->whereHas('user', function ($q) use ($eventIds) {
+                $q->whereHas('teams', function ($q2) use ($eventIds) {
+                    $q2->whereIn('competition_id', $eventIds);
+                })->orWhereHas('events', function ($q2) use ($eventIds) {
+                    $q2->whereIn('event_id', $eventIds);
+                });
+            });
+        }
+
+        $users = $query->orderBy('email')->paginate(50);
+
+        return view('admin.users.index', [
+            'users' => $users,
+        ]);
+    }
+
     public function transactions(): View
     {
         abort_unless(in_array(auth()->user()?->role, ['superadmin', 'admin_keuangan']), 403);
@@ -263,16 +321,22 @@ class AdminDashboardController extends Controller
 
         $user = auth()->user();
         $query = Event::withCount(['teams', 'timelines'])
-            ->where('type', 'competition')
             ->orderBy('title');
 
         if ($user->role === 'panitia') {
             $query->whereIn('id', $user->events->pluck('id'));
         }
 
+        $events = $query->get();
+        $canManageCompetitions = $user->role === 'superadmin';
+
+        if (!$canManageCompetitions && $events->count() === 1) {
+            $events->load('submissions.team');
+        }
+
         return view('admin.timelines.index', [
-            'events' => $query->get(),
-            'canManageCompetitions' => $user->role === 'superadmin',
+            'events' => $events,
+            'canManageCompetitions' => $canManageCompetitions,
             'canManageTimelines' => in_array($user->role, ['superadmin', 'panitia'], true),
         ]);
     }
@@ -286,7 +350,7 @@ class AdminDashboardController extends Controller
             abort_unless(auth()->user()->events->contains('id', $event->id), 403);
         }
 
-        $eventsQuery = Event::where('type', 'competition')->orderBy('title');
+        $eventsQuery = Event::orderBy('title');
         if (auth()->user()->role === 'panitia') {
             $eventsQuery->whereIn('id', auth()->user()->events->pluck('id'));
         }
@@ -308,7 +372,6 @@ class AdminDashboardController extends Controller
         Event::create([
             ...$validated,
             'id' => (string) Str::uuid(),
-            'type' => 'competition',
             'is_active' => true,
             'max_noncompetition_participant' => null,
         ]);
@@ -324,6 +387,22 @@ class AdminDashboardController extends Controller
         $event->update($this->validateCompetition($request));
 
         return back()->with('status', 'Kompetisi berhasil diperbarui.');
+    }
+
+    public function updatePanitiaDetails(Request $request, Event $event): RedirectResponse
+    {
+        abort_unless(in_array(auth()->user()?->role, ['superadmin', 'panitia']), 403);
+        $this->abortUnlessCompetition($event);
+        $this->abortIfUnassignedPanitia($event->id);
+
+        $validated = $request->validate([
+            'description' => ['required', 'string', 'max:2000'],
+            'guide_book_url' => ['required', 'url', 'max:500'],
+        ]);
+
+        $event->update($validated);
+
+        return back()->with('status', 'Detail kompetisi berhasil diperbarui.');
     }
 
     public function destroyCompetition(Event $event): RedirectResponse
@@ -544,10 +623,12 @@ class AdminDashboardController extends Controller
     {
         return $request->validate([
             'title' => ['required', 'string', 'max:191'],
+            'type' => ['required', 'string', \Illuminate\Validation\Rule::in(['competition', 'non_competition'])],
             'description' => ['required', 'string', 'max:2000'],
             'guide_book_url' => ['required', 'url', 'max:500'],
             'price' => ['required', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],
+            'requires_submission' => ['sometimes', 'boolean'],
             'contact_person1' => ['required', 'string', 'max:191'],
             'contact_person2' => ['nullable', 'string', 'max:191'],
         ]);
@@ -555,6 +636,6 @@ class AdminDashboardController extends Controller
 
     private function abortUnlessCompetition(?Event $event): void
     {
-        abort_unless($event?->type === 'competition', 403);
+        // No longer aborting for non-competition events so they can be managed uniformly
     }
 }
