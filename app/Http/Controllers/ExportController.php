@@ -85,18 +85,22 @@ class ExportController extends Controller
         }, 200, $this->buildCsvHeaders($filename));
     }
 
-    public function exportUsersGlobal(): StreamedResponse
+    public function exportUsersGlobal(\Illuminate\Http\Request $request): StreamedResponse
     {
         $userRole = auth()->user()->role;
         abort_unless(in_array($userRole, ['superadmin', 'admin_keuangan', 'panitia']), 403);
         $filename = 'rekap-pengguna-umum-' . now()->format('Y-m-d') . '.csv';
 
-        return response()->stream(function () use ($userRole) {
+        $requestedEventId = $request->input('event_id');
+
+        return response()->stream(function () use ($userRole, $requestedEventId) {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
             
             $eventIds = null;
-            if ($userRole === 'panitia') {
+            if ($requestedEventId) {
+                $eventIds = [$requestedEventId];
+            } elseif ($userRole === 'panitia') {
                 $eventIds = auth()->user()->events->pluck('id')->toArray();
             }
             

@@ -1,95 +1,119 @@
 <x-admin.layout
-    title="Peserta Event Non-Kompetisi"
-    subtitle="Verifikasi bukti pembayaran dan pendaftaran peserta event."
+    title="Verifikasi Bukti Bayar"
+    subtitle="Validasi bukti pembayaran peserta event non-kompetisi."
 >
-    <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <form method="GET" action="{{ route('admin.event-participants.index') }}" class="mb-6 flex flex-wrap gap-4">
-            <div class="flex-1">
-                <label class="block text-sm font-semibold text-gray-700">Filter Event</label>
-                <select name="event_id" onchange="this.form.submit()" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <option value="">Semua Event Non-Kompetisi</option>
-                    @foreach($events as $event)
-                        <option value="{{ $event->id }}" @selected(request('event_id') === $event->id)>{{ $event->title }}</option>
-                    @endforeach
-                </select>
+    <div class="mb-6 grid gap-4 md:grid-cols-3">
+        <x-admin.stat-card label="Pending" :value="$pendingCount" tone="amber" />
+        <x-admin.stat-card label="Accepted" :value="$acceptedCount" tone="emerald" />
+        <x-admin.stat-card label="Rejected" :value="$rejectedCount" tone="rose" />
+    </div>
+
+    <section class="rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div class="border-b border-gray-200 px-6 py-5">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-950">Antrean Peserta</h2>
+                </div>
+                <form method="GET" action="{{ route('admin.event-participants.index') }}" class="flex flex-col sm:flex-row gap-3">
+                    <div>
+                        <label class="sr-only">Filter Event</label>
+                        <select name="event_id" onchange="this.form.submit()" class="block w-full sm:w-auto rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">Semua Event</option>
+                            @foreach($events as $event)
+                                <option value="{{ $event->id }}" @selected(request('event_id') === $event->id)>{{ $event->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="sr-only">Filter Status</label>
+                        <select name="status" onchange="this.form.submit()" class="block w-full sm:w-auto rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="default" @selected($filterStatus === 'default')>Pending & Rejected</option>
+                            <option value="all" @selected($filterStatus === 'all')>Semua Status</option>
+                            <option value="pending" @selected($filterStatus === 'pending')>Pending</option>
+                            <option value="accepted" @selected($filterStatus === 'accepted')>Accepted</option>
+                            <option value="rejected" @selected($filterStatus === 'rejected')>Rejected</option>
+                        </select>
+                    </div>
+                </form>
             </div>
-        </form>
+        </div>
 
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Peserta</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Event</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Tanggal Daftar</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Bukti Bayar</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Aksi</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">Peserta</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">Event</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">Bukti Transfer</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold uppercase text-gray-500">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse ($participants as $participant)
                         <tr>
                             <td class="px-6 py-4">
-                                <p class="font-semibold text-gray-900">{{ $participant->full_name }}</p>
-                                <p class="text-xs text-gray-500">{{ $participant->email }}</p>
-                                <p class="text-xs text-gray-500">{{ $participant->phone_number }}</p>
+                                <p class="font-semibold text-gray-950">{{ $participant->full_name }}</p>
+                                <p class="text-sm text-gray-600">{{ $participant->email }}</p>
+                                <p class="text-xs text-gray-500 mt-1">{{ \Carbon\Carbon::parse($participant->date_added)->format('d M Y H:i') }}</p>
                             </td>
-                            <td class="px-6 py-4">
-                                <span class="font-medium text-gray-800">{{ $participant->event_title }}</span>
+                            <td class="px-6 py-4 text-sm text-gray-700">
+                                {{ $participant->event_title }}
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">
-                                {{ \Carbon\Carbon::parse($participant->date_added)->format('d M Y H:i') }}
-                            </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4 text-sm">
                                 @if($participant->payment_proof)
-                                    <a href="{{ Storage::url($participant->payment_proof) }}" target="_blank" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Lihat Bukti</a>
+                                    <div class="space-y-1">
+                                        <p class="font-medium text-gray-950">File Terunggah</p>
+                                        <a href="{{ Storage::url($participant->payment_proof) }}" target="_blank" rel="noopener" class="inline-flex items-center rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                            Lihat Gambar
+                                        </a>
+                                    </div>
                                 @else
-                                    <span class="text-gray-400 text-sm italic">Belum Upload</span>
+                                    <span class="text-gray-500">Belum ada bukti transfer</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4">
-                                @if($participant->payment_verification === 'accepted')
-                                    <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">Diterima</span>
-                                @elseif($participant->payment_verification === 'rejected')
-                                    <span class="inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-800">Ditolak</span>
-                                @else
-                                    <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Menunggu</span>
-                                @endif
+                                <x-admin.status-badge :status="$participant->payment_verification" />
                             </td>
-                            <td class="px-6 py-4 text-sm font-medium">
-                                <form method="POST" action="{{ route('admin.event-participants.verify') }}" class="flex gap-2">
-                                    @csrf
-                                    <input type="hidden" name="user_id" value="{{ $participant->user_id }}">
-                                    <input type="hidden" name="event_id" value="{{ $participant->event_id }}">
-                                    
+                            <td class="px-6 py-4">
+                                <div class="flex justify-end gap-2">
                                     @if($participant->payment_verification !== 'accepted')
-                                        <button type="submit" name="action" value="accept" class="rounded border border-emerald-500 text-emerald-600 px-3 py-1 hover:bg-emerald-50 focus:ring-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-1">
-                                            Terima
-                                        </button>
+                                        <form method="POST" action="{{ route('admin.event-participants.verify') }}">
+                                            @csrf
+                                            <input type="hidden" name="user_id" value="{{ $participant->user_id }}">
+                                            <input type="hidden" name="event_id" value="{{ $participant->event_id }}">
+                                            <button type="submit" name="action" value="accept" class="rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
+                                                Accept
+                                            </button>
+                                        </form>
                                     @endif
-                                    
+
                                     @if($participant->payment_verification !== 'rejected')
-                                        <button type="submit" name="action" value="reject" class="rounded border border-rose-500 text-rose-600 px-3 py-1 hover:bg-rose-50 focus:ring-rose-500 focus:outline-none focus:ring-2 focus:ring-offset-1">
-                                            Tolak
-                                        </button>
+                                        <form method="POST" action="{{ route('admin.event-participants.verify') }}">
+                                            @csrf
+                                            <input type="hidden" name="user_id" value="{{ $participant->user_id }}">
+                                            <input type="hidden" name="event_id" value="{{ $participant->event_id }}">
+                                            <button type="submit" name="action" value="reject" class="rounded-md bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-500">
+                                                Reject
+                                            </button>
+                                        </form>
                                     @endif
-                                </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                                Tidak ada data peserta event non-kompetisi.
-                            </td>
+                            <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-600">Belum ada data peserta yang perlu diverifikasi.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
         
-        <div class="mt-4">
-            {{ $participants->links() }}
-        </div>
+        @if($participants->hasPages())
+            <div class="border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                {{ $participants->links() }}
+            </div>
+        @endif
     </section>
 </x-admin.layout>

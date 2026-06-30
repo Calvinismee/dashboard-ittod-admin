@@ -14,8 +14,17 @@
             <p class="mt-1 text-xs font-semibold uppercase tracking-wide text-gray-700">View registered participants</p>
         </div>
 
-        <div>
-            <a href="{{ route('export.users.global') }}" class="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-bold uppercase text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+        <div class="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+            <form method="GET" action="{{ route('admin.users.index') }}" class="flex items-center gap-2">
+                <label class="sr-only">Filter Event</label>
+                <select name="event_id" onchange="this.form.submit()" class="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="">Semua Event</option>
+                    @foreach($events as $event)
+                        <option value="{{ $event->id }}" @selected($filterEventId === $event->id)>{{ $event->title }}</option>
+                    @endforeach
+                </select>
+            </form>
+            <a href="{{ route('export.users.global', ['event_id' => $filterEventId]) }}" class="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-bold uppercase text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                 Export CSV
             </a>
         </div>

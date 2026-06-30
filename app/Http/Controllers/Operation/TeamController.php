@@ -43,6 +43,10 @@ class TeamController extends Controller
         if (auth()->user()->role === 'panitia') {
             abort_unless(auth()->user()->events->contains('id', $team->competition_id), 403);
         }
+
+        if ($team->is_document_verified) {
+            return back()->with('error', 'Berkas tim yang sudah disetujui tidak dapat diubah statusnya.');
+        }
         
         $request->validate([
             'is_document_verified' => 'required|in:0,1',
@@ -83,6 +87,10 @@ class TeamController extends Controller
 
         if (auth()->user()->role === 'panitia') {
             abort_unless(auth()->user()->events->contains('id', $team->competition_id), 403);
+        }
+
+        if ($team->is_document_verified) {
+            return back()->with('error', 'Berkas tim yang sudah disetujui tidak dapat diubah status anggotanya.');
         }
 
         $request->validate([

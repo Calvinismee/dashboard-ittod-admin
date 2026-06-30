@@ -216,15 +216,31 @@ class AdminDashboardController extends Controller
         return back()->with('status', 'Akun staff berhasil dihapus.');
     }
 
-    public function users(): View
+    public function users(\Illuminate\Http\Request $request): View
     {
         $userRole = auth()->user()?->role;
         abort_unless(in_array($userRole, ['superadmin', 'admin_keuangan', 'panitia']), 403);
 
+        $eventsQuery = \App\Models\Event::query()->orderBy('title');
+        if ($userRole === 'panitia') {
+            $eventsQuery->whereIn('id', auth()->user()->events->pluck('id'));
+        }
+        $events = $eventsQuery->get();
+
         $query = UserIdentity::with('user')->where('role', 'user');
 
-        if ($userRole === 'panitia') {
-            $eventIds = auth()->user()->events->pluck('id');
+        $filterEventId = $request->input('event_id');
+        
+        if ($filterEventId) {
+            $query->whereHas('user', function ($q) use ($filterEventId) {
+                $q->whereHas('teams', function ($q2) use ($filterEventId) {
+                    $q2->where('competition_id', $filterEventId);
+                })->orWhereHas('events', function ($q2) use ($filterEventId) {
+                    $q2->where('event_id', $filterEventId);
+                });
+            });
+        } elseif ($userRole === 'panitia') {
+            $eventIds = $events->pluck('id');
             $query->whereHas('user', function ($q) use ($eventIds) {
                 $q->whereHas('teams', function ($q2) use ($eventIds) {
                     $q2->whereIn('competition_id', $eventIds);
@@ -234,34 +250,58 @@ class AdminDashboardController extends Controller
             });
         }
 
-        $users = $query->orderBy('email')->paginate(50);
+        $users = $query->orderBy('email')->paginate(50)->withQueryString();
 
         return view('admin.users.index', [
             'users' => $users,
+            'events' => $events,
+            'filterEventId' => $filterEventId,
         ]);
     }
 
-    public function transactions(): View
+    public function transactions(\Illuminate\Http\Request $request): View
     {
         abort_unless(in_array(auth()->user()?->role, ['superadmin', 'admin_keuangan']), 403);
-        $teams = Team::with(['event', 'paymentProof', 'members'])
-            ->where('is_document_verified', 1)
-            ->latest('created_at')
-            ->get()
-            ->map(function (Team $team) {
-                $team->payment_proof_url = $this->mediaUrl($team->paymentProof?->url);
+        $query = Team::with(['event', 'paymentProof', 'members'])
+            ->where('is_document_verified', 1);
 
-                return $team;
+        $filterStatus = $request->input('status', 'default');
+        
+        if ($filterStatus === 'default') {
+            $query->where(function ($q) {
+                $q->where('is_verified', false)->orWhereNotNull('verification_error');
             });
+        } elseif ($filterStatus === 'pending') {
+            $query->where('is_verified', false)->whereNull('verification_error');
+        } elseif ($filterStatus === 'accepted') {
+            $query->where('is_verified', true);
+        } elseif ($filterStatus === 'rejected') {
+            $query->where('is_verified', false)->whereNotNull('verification_error');
+        }
+        // if 'all', do not filter by status
 
-        return view('admin.transactions.index', [
-            'teams' => $teams,
-        ]);
+        $teams = $query->latest('created_at')->paginate(50)->withQueryString();
+
+        $teams->getCollection()->transform(function (Team $team) {
+            $team->payment_proof_url = $this->mediaUrl($team->paymentProof?->url);
+            return $team;
+        });
+
+        $statsQuery = Team::where('is_document_verified', 1);
+        $pendingCount = (clone $statsQuery)->where('is_verified', false)->whereNull('verification_error')->count();
+        $acceptedCount = (clone $statsQuery)->where('is_verified', true)->count();
+        $rejectedCount = (clone $statsQuery)->where('is_verified', false)->whereNotNull('verification_error')->count();
+
+        return view('admin.transactions.index', compact('teams', 'pendingCount', 'acceptedCount', 'rejectedCount', 'filterStatus'));
     }
 
     public function acceptTransaction(Team $team): RedirectResponse
     {
         abort_unless(in_array(auth()->user()?->role, ['superadmin', 'admin_keuangan']), 403);
+
+        if ($team->is_verified) {
+            return back()->with('error', 'Transaksi yang sudah diterima tidak dapat diubah.');
+        }
 
         $team->update([
             'is_verified' => true,
@@ -271,9 +311,13 @@ class AdminDashboardController extends Controller
         return back()->with('status', "Transaksi {$team->team_name} diterima.");
     }
 
-    public function rejectTransaction(Request $request, Team $team): RedirectResponse
+    public function rejectTransaction(\Illuminate\Http\Request $request, Team $team): RedirectResponse
     {
         abort_unless(in_array(auth()->user()?->role, ['superadmin', 'admin_keuangan']), 403);
+
+        if ($team->is_verified) {
+            return back()->with('error', 'Transaksi yang sudah diterima tidak dapat diubah.');
+        }
 
         $validated = $request->validate([
             'verification_error' => ['required', 'string', 'max:1000'],
@@ -500,10 +544,10 @@ class AdminDashboardController extends Controller
         abort_unless($this->isAdminStaff(), 403);
 
         $user = auth()->user();
-        $eventRules = ['required', 'string', Rule::exists('event', 'id')];
+        $eventRules = ['nullable', 'string', Rule::exists('event', 'id')];
         
         if ($user->role === 'panitia') {
-            $eventRules[] = Rule::in($user->events->pluck('id')->toArray());
+            $eventRules = ['required', 'string', Rule::exists('event', 'id'), Rule::in($user->events->pluck('id')->toArray())];
         }
 
         $validated = $request->validate([
@@ -526,11 +570,11 @@ class AdminDashboardController extends Controller
         abort_unless($this->isAdminStaff(), 403);
         
         $user = auth()->user();
-        $eventRules = ['required', 'string', Rule::exists('event', 'id')];
+        $eventRules = ['nullable', 'string', Rule::exists('event', 'id')];
         
         if ($user->role === 'panitia') {
-            abort_unless($user->events->contains('id', $announcement->event_id), 403);
-            $eventRules[] = Rule::in($user->events->pluck('id')->toArray());
+            abort_unless($announcement->event_id && $user->events->contains('id', $announcement->event_id), 403);
+            $eventRules = ['required', 'string', Rule::exists('event', 'id'), Rule::in($user->events->pluck('id')->toArray())];
         }
 
         $validated = $request->validate([

@@ -34,9 +34,26 @@ class EventParticipantController extends Controller
             $query->where('event_participant.event_id', $request->event_id);
         }
 
-        $participants = $query->orderByDesc('event_participant.date_added')->paginate(50);
+        $filterStatus = $request->input('status', 'default');
+        
+        if ($filterStatus === 'default') {
+            $query->whereIn('event_participant.payment_verification', ['pending', 'rejected']);
+        } elseif (in_array($filterStatus, ['pending', 'accepted', 'rejected'])) {
+            $query->where('event_participant.payment_verification', $filterStatus);
+        }
+        // if 'all', do not filter by status
 
-        return view('admin.event-participants.index', compact('participants', 'events'));
+        $participants = $query->orderByDesc('event_participant.date_added')->paginate(50)->withQueryString();
+
+        $statsQuery = DB::table('event_participant')
+            ->join('event', 'event_participant.event_id', '=', 'event.id')
+            ->where('event.type', 'non_competition');
+            
+        $pendingCount = (clone $statsQuery)->where('payment_verification', 'pending')->count();
+        $acceptedCount = (clone $statsQuery)->where('payment_verification', 'accepted')->count();
+        $rejectedCount = (clone $statsQuery)->where('payment_verification', 'rejected')->count();
+
+        return view('admin.event-participants.index', compact('participants', 'events', 'pendingCount', 'acceptedCount', 'rejectedCount', 'filterStatus'));
     }
 
     public function verify(Request $request)
@@ -48,6 +65,19 @@ class EventParticipantController extends Controller
             'event_id' => 'required|string',
             'action' => 'required|in:accept,reject',
         ]);
+
+        $participant = DB::table('event_participant')
+            ->where('user_id', $request->user_id)
+            ->where('event_id', $request->event_id)
+            ->first();
+
+        if (!$participant) {
+            return back()->with('error', 'Data tidak ditemukan.');
+        }
+
+        if ($participant->payment_verification === 'accepted') {
+            return back()->with('error', 'Status yang sudah diterima tidak dapat diubah.');
+        }
 
         $status = $request->action === 'accept' ? 'accepted' : 'rejected';
 

@@ -38,10 +38,22 @@
         class="rounded-lg border border-gray-200 bg-white shadow-sm"
     >
         <div class="border-b border-gray-200 px-6 py-5">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-lg font-semibold text-gray-950">Antrean Tim</h2>
                 </div>
+                <form method="GET" action="{{ route('admin.transactions.index') }}" class="flex flex-col sm:flex-row gap-3">
+                    <div>
+                        <label class="sr-only">Filter Status</label>
+                        <select name="status" onchange="this.form.submit()" class="block w-full sm:w-auto rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="default" @selected($filterStatus === 'default')>Pending & Rejected</option>
+                            <option value="all" @selected($filterStatus === 'all')>Semua Status</option>
+                            <option value="pending" @selected($filterStatus === 'pending')>Pending</option>
+                            <option value="accepted" @selected($filterStatus === 'accepted')>Accepted</option>
+                            <option value="rejected" @selected($filterStatus === 'rejected')>Rejected</option>
+                        </select>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -90,21 +102,23 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex justify-end gap-2">
-                                    <form method="POST" action="{{ route('admin.transactions.accept', $team) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" class="rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
-                                            Accept
-                                        </button>
-                                    </form>
+                                    @if(!$team->is_verified)
+                                        <form method="POST" action="{{ route('admin.transactions.accept', $team) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
+                                                Accept
+                                            </button>
+                                        </form>
 
-                                    <button
-                                        type="button"
-                                        class="rounded-md bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-500"
-                                        x-on:click="openReject(@js($team->team_name), @js(route('admin.transactions.reject', $team)))"
-                                    >
-                                        Reject
-                                    </button>
+                                        <button
+                                            type="button"
+                                            class="rounded-md bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-500"
+                                            x-on:click="openReject(@js($team->team_name), @js(route('admin.transactions.reject', $team)))"
+                                        >
+                                            Reject
+                                        </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -116,6 +130,12 @@
                 </tbody>
             </table>
         </div>
+
+        @if($teams->hasPages())
+            <div class="border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                {{ $teams->links() }}
+            </div>
+        @endif
 
         <div
             x-cloak

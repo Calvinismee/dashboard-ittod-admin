@@ -126,8 +126,12 @@
             <div class="mt-5 grid gap-4">
                 <label class="block">
                     <span class="text-sm font-semibold text-gray-700">Event</span>
-                    <select name="event_id" required class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
-                        <option value="">Pilih Event</option>
+                    <select name="event_id" {{ auth()->user()->role === 'panitia' ? 'required' : '' }} class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                        @if(auth()->user()->role !== 'panitia')
+                            <option value="">Umum (Seluruh Peserta)</option>
+                        @else
+                            <option value="" disabled selected>Pilih Event</option>
+                        @endif
                         @foreach ($events as $event)
                             <option value="{{ $event->id }}" @selected(old('event_id') == $event->id)>{{ $event->title }}</option>
                         @endforeach
@@ -165,7 +169,12 @@
                 <div class="mt-5 grid gap-4">
                     <label class="block">
                         <span class="text-sm font-semibold text-gray-700">Event</span>
-                        <select name="event_id" required class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                        <select name="event_id" {{ auth()->user()->role === 'panitia' ? 'required' : '' }} class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                            @if(auth()->user()->role !== 'panitia')
+                                <option value="">Umum (Seluruh Peserta)</option>
+                            @else
+                                <option value="" disabled @selected(empty($announcement->event_id))>Pilih Event</option>
+                            @endif
                             @foreach ($events as $event)
                                 <option value="{{ $event->id }}" @selected(old('event_id', $announcement->event_id) == $event->id)>{{ $event->title }}</option>
                             @endforeach

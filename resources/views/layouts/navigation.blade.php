@@ -22,19 +22,13 @@
                         </x-nav-link>
                     @endif
 
-                    <!-- Peserta Umum: Superadmin, Admin Keuangan, Panitia -->
+                    <!-- List Peserta: Superadmin, Admin Keuangan, Panitia -->
                     @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
                         <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                            {{ __('Peserta Umum') }}
+                            {{ __('List Peserta') }}
                         </x-nav-link>
                     @endif
 
-                    <!-- Verifikasi Event Non-Kompetisi: Superadmin, Admin Keuangan -->
-                    @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan']))
-                        <x-nav-link :href="route('admin.event-participants.index')" :active="request()->routeIs('admin.event-participants.*')">
-                            {{ __('Peserta Event Non-Kompetisi') }}
-                        </x-nav-link>
-                    @endif
 
                     <!-- Berkas, Timeline, Agenda: Superadmin & Panitia -->
                     @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'panitia']))
@@ -52,7 +46,7 @@
                         $user = Auth::user();
                         $isSeminarPanitia = $user->role === 'panitia' && $user->events->where('type', 'non_competition')->isNotEmpty();
                     @endphp
-                    @if(Auth::check() && ($user->role === 'superadmin' || $isSeminarPanitia))
+                    @if(Auth::check() && (in_array($user->role, ['superadmin', 'admin_keuangan']) || $isSeminarPanitia))
                         <x-nav-link :href="route('timeline.index')" :active="request()->routeIs('timeline.*')">
                             {{ __('Kelola Timeline Event') }}
                         </x-nav-link>
@@ -61,7 +55,14 @@
                     <!-- Transaksi: Superadmin & Admin Keuangan -->
                     @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan']))
                         <x-nav-link :href="route('admin.transactions.index')" :active="request()->routeIs('admin.transactions.*')">
-                            {{ __('Transaksi') }}
+                            {{ __('Verifikasi Pembayaran Tim') }}
+                        </x-nav-link>
+                    @endif
+
+                    <!-- Verifikasi Event Non-Kompetisi: Superadmin, Admin Keuangan -->
+                    @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan']))
+                        <x-nav-link :href="route('admin.event-participants.index')" :active="request()->routeIs('admin.event-participants.*')">
+                            {{ __('Verifikasi Event') }}
                         </x-nav-link>
                     @endif
 
@@ -130,15 +131,10 @@
 
             @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan', 'panitia']))
                 <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                    {{ __('Peserta Umum') }}
+                    {{ __('List Peserta') }}
                 </x-responsive-nav-link>
             @endif
 
-            @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan']))
-                <x-responsive-nav-link :href="route('admin.event-participants.index')" :active="request()->routeIs('admin.event-participants.*')">
-                    {{ __('Peserta Event Non-Kompetisi') }}
-                </x-responsive-nav-link>
-            @endif
 
             @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'panitia']))
                 <x-responsive-nav-link :href="route('operation.teams.index')" :active="request()->routeIs('operation.teams.*') || request()->routeIs('admin.files-participants.*')">
@@ -155,7 +151,7 @@
                 $user = Auth::user();
                 $isSeminarPanitia = $user?->role === 'panitia' && $user->events->where('type', 'non_competition')->isNotEmpty();
             @endphp
-            @if(Auth::check() && ($user->role === 'superadmin' || $isSeminarPanitia))
+            @if(Auth::check() && (in_array($user->role, ['superadmin', 'admin_keuangan']) || $isSeminarPanitia))
                 <x-responsive-nav-link :href="route('timeline.index')" :active="request()->routeIs('timeline.*')">
                     {{ __('Kelola Timeline Event') }}
                 </x-responsive-nav-link>
@@ -163,7 +159,10 @@
 
             @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'admin_keuangan']))
                 <x-responsive-nav-link :href="route('admin.transactions.index')" :active="request()->routeIs('admin.transactions.*')">
-                    {{ __('Transaksi') }}
+                    {{ __('Verifikasi Pembayaran Tim') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.event-participants.index')" :active="request()->routeIs('admin.event-participants.*')">
+                    {{ __('Verifikasi Event') }}
                 </x-responsive-nav-link>
             @endif
 
