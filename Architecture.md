@@ -24,11 +24,13 @@ Modul utama:
 | UC-02 Verifikasi Pembayaran Tim | Ya | Ya | Tidak |
 | UC-03 Lihat Rekap Transaksi | Ya | Ya | Tidak |
 | UC-04 Kelola Data & Berkas Tim | Ya | Tidak | Ya |
-| UC-05 Kelola Lini Masa Kompetisi | Ya | Tidak | Ya |
+| UC-05 Kelola Lini Masa Kompetisi | Ya | Ya | Ya |
 | UC-06 Publish Pengumuman Dashboard | Ya | Ya | Ya |
 | UC-07 Ekspor Rekapitulasi Data CSV | Ya | Ya | Ya |
 | UC-08 Input Alasan Penolakan | Ya | Ya untuk transaksi, Panitia untuk berkas | Ya untuk berkas |
 | UC-09 Login Multi-Role | Ya | Ya | Ya |
+| UC-10 Verifikasi Event Non-Kompetisi | Ya | Ya | Tidak |
+| UC-11 List Peserta | Ya (Semua) | Ya (Semua) | Ya (Hanya event ditugaskan) |
 
 ## Auth Dan Role
 
@@ -54,10 +56,12 @@ Route utama:
 
 - `/dashboard`: dashboard staff yang sudah login dan verified.
 - `/admin/staff`: manajemen staff, dikunci di controller untuk superadmin.
-- `/admin/transactions`: verifikasi transaksi untuk superadmin dan admin keuangan.
+- `/admin/transactions`: verifikasi pembayaran tim (kompetisi) untuk superadmin dan admin keuangan.
+- `/admin/event-participants`: verifikasi bukti bayar event non-kompetisi untuk superadmin dan admin keuangan.
+- `/admin/users`: direktori/list peserta (pengguna). Superadmin & Admin Keuangan melihat semua, Panitia melihat sesuai event.
 - `/operation/teams`: kelola data dan berkas tim untuk superadmin dan panitia.
-- `/admin/timelines`: daftar timeline kompetisi untuk superadmin dan panitia.
-- `/admin/timelines/{event}/agenda`: agenda kompetisi untuk superadmin dan panitia yang ditugaskan.
+- `/admin/timelines`: daftar timeline kompetisi dan event untuk superadmin, admin keuangan, dan panitia.
+- `/admin/timelines/{event}/agenda`: agenda kegiatan untuk superadmin, admin keuangan, dan panitia yang ditugaskan.
 - `/admin/announcements`: pengumuman untuk semua role staff.
 - `/export/*`: export CSV, dikunci di `ExportController`.
 
@@ -80,9 +84,8 @@ Pembatasan akses penting:
 
 - `staff()`, `storeStaff()`, `showStaff()`, `updateStaff()`, `destroyStaff()` hanya untuk superadmin.
 - `transactions()`, `acceptTransaction()`, `rejectTransaction()` hanya untuk superadmin dan admin keuangan.
-- `filesParticipants()`, `files()`, `timelines()`, `timelineAgenda()` hanya untuk superadmin dan panitia.
-- `storeTimeline()`, `updateTimeline()`, `destroyTimeline()` untuk superadmin dan panitia, dengan panitia dibatasi hanya event yang ditugaskan.
-- `announcements()`, `storeAnnouncement()`, `updateAnnouncement()`, `destroyAnnouncement()` untuk semua staff, dengan panitia dibatasi hanya event yang ditugaskan.
+- `filesParticipants()`, `files()` hanya untuk superadmin dan panitia.
+- `announcements()`, `storeAnnouncement()`, `updateAnnouncement()`, `destroyAnnouncement()` untuk semua staff, dengan panitia dibatasi hanya event yang ditugaskan. Pengumuman "Umum" (event_id null) hanya bisa dibuat oleh superadmin dan admin keuangan.
 
 ### `Operation\TeamController`
 
@@ -104,8 +107,16 @@ Pembatasan akses:
 Tanggung jawab:
 
 - CRUD timeline kegiatan non-kompetisi atau agenda seminar.
-- Akses untuk superadmin dan panitia.
+- Akses untuk superadmin, admin keuangan, dan panitia.
 - Panitia hanya bisa mengelola event yang ditugaskan.
+
+### `Admin\EventParticipantController`
+
+Tanggung jawab:
+
+- Endpoint verifikasi pembayaran peserta event non-kompetisi.
+- Filter berdasarkan status verifikasi dan event.
+- Status yang sudah diterima (accepted) akan dikunci (tidak bisa diubah lagi).
 
 ### `TransactionController`
 
@@ -236,8 +247,8 @@ Halaman: `/admin/announcements`
 Fitur:
 
 - Superadmin, admin keuangan, dan panitia dapat membuka halaman pengumuman.
-- Superadmin dan admin keuangan dapat mengelola pengumuman untuk semua event.
-- Panitia hanya dapat melihat dan mengelola pengumuman pada event yang ditugaskan.
+- Superadmin dan admin keuangan dapat mengelola pengumuman untuk semua event, serta pengumuman "Umum" (Seluruh Peserta).
+- Panitia hanya dapat melihat dan mengelola pengumuman pada event yang ditugaskan (tidak bisa membuat pengumuman Umum).
 
 ## Timeline Kompetisi
 
@@ -270,21 +281,26 @@ Fitur:
 - Tombol `Tolak` pada anggota wajib menyertakan catatan kesalahan.
 - Kartu anggota menampilkan ketua di urutan paling atas dan menyediakan dropdown data lengkap peserta.
 
-## Transaksi
+## Transaksi & Verifikasi Event
 
 Halaman:
 
-- `/admin/transactions`
+- `/admin/transactions` (Tim Kompetisi)
+- `/admin/event-participants` (Peserta Non-Kompetisi)
 
-Endpoint JSON:
+Endpoint JSON & Verifikasi:
 
-- `POST /transaction/{teamId}/verify`
+- `POST /transaction/{teamId}/verify` (Kompetisi)
+- `POST /admin/event-participants/verify` (Non-Kompetisi)
 - `GET /transaction/recap`
 
 Fitur:
 
 - Superadmin dan admin keuangan dapat memverifikasi pembayaran.
+- Terdapat filter berdasarkan event dan status (Semua Status, Pending, Accepted, Rejected).
+- Status default pada view adalah Pending & Rejected.
 - Reject pembayaran membutuhkan alasan penolakan.
+- Verifikasi yang sudah disetujui (Accepted) akan **dikunci** (locked) dan tidak bisa diubah kembali. Tombol aksi disembunyikan dan backend memblokir request.
 - Rekap transaksi menghitung akumulasi dana dari tim yang sudah diterima.
 
 ## Export CSV
