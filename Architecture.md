@@ -187,6 +187,9 @@ Field penting:
 - `whatsapp_group_link`: Tautan grup WhatsApp untuk peserta.
 - `contact_person1`: Nomor CP 1 (disimpan dalam format angka saja).
 - `contact_person2`: Nomor CP 2 (disimpan dalam format angka saja).
+- `participation_type`: Tipe pendaftaran event dengan nilai `individual` atau
+  `team`. Nilai dipilih saat event dibuat atau diedit dan digunakan web API
+  untuk menentukan alur pendaftaran peserta.
 
 ### `Team`
 

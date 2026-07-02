@@ -430,6 +430,14 @@
                     <span class="text-sm font-semibold text-gray-700">Biaya Pendaftaran</span>
                     <x-admin.currency-input name="price" :value="old('price', 0)" />
                 </label>
+                <label class="block">
+                    <span class="text-sm font-semibold text-gray-700">Tipe Partisipasi</span>
+                    <select name="participation_type" required class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                        <option value="">-- Pilih Tipe --</option>
+                        <option value="individual" {{ old('participation_type') === 'individual' ? 'selected' : '' }}>Individu</option>
+                        <option value="team" {{ old('participation_type') === 'team' ? 'selected' : '' }}>Tim</option>
+                    </select>
+                </label>
                 <label class="block sm:col-span-2">
                     <span class="text-sm font-semibold text-gray-700">Deskripsi</span>
                     <textarea name="description" rows="3" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">{{ old('description') }}</textarea>
@@ -495,6 +503,14 @@
                     <label class="block">
                         <span class="text-sm font-semibold text-gray-700">Biaya Pendaftaran</span>
                         <x-admin.currency-input name="price" :value="old('price', $event->price)" />
+                    </label>
+                    <label class="block">
+                        <span class="text-sm font-semibold text-gray-700">Tipe Partisipasi</span>
+                        <select name="participation_type" required class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                            <option value="">-- Pilih Tipe --</option>
+                            <option value="individual" {{ old('participation_type', $event->participation_type) === 'individual' ? 'selected' : '' }}>Individu</option>
+                            <option value="team" {{ old('participation_type', $event->participation_type) === 'team' ? 'selected' : '' }}>Tim</option>
+                        </select>
                     </label>
                     <label class="flex items-center gap-3 rounded-md border border-gray-200 px-3 py-3">
                         <input type="hidden" name="is_active" value="0">

@@ -39,6 +39,19 @@
     </label>
 
     <label class="block">
+        <span class="text-sm font-semibold text-gray-700">Tipe Partisipasi</span>
+        <select
+            name="participation_type"
+            required
+            class="mt-1 w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+        >
+            <option value="">-- Pilih Tipe --</option>
+            <option value="individual" {{ old('participation_type') === 'individual' ? 'selected' : '' }}>Individu</option>
+            <option value="team" {{ old('participation_type') === 'team' ? 'selected' : '' }}>Tim</option>
+        </select>
+    </label>
+
+    <label class="block">
         <span class="text-sm font-semibold text-gray-700">Contact Person 1</span>
         <input
             name="contact_person1"
