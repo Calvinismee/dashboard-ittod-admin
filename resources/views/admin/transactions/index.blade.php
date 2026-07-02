@@ -3,9 +3,9 @@
     subtitle="Validasi bukti transfer tim kompetisi dan catat alasan penolakan dengan modal interaktif."
 >
     @php
-        $pendingCount = $teams->filter(fn ($team) => ! $team->is_verified && blank($team->verification_error))->count();
-        $acceptedCount = $teams->filter(fn ($team) => $team->is_verified)->count();
-        $rejectedCount = $teams->filter(fn ($team) => ! $team->is_verified && filled($team->verification_error))->count();
+        $pendingCount = $teams->filter(fn ($team) => $team->is_verified === 'pending')->count();
+        $acceptedCount = $teams->filter(fn ($team) => $team->is_verified === 'approved')->count();
+        $rejectedCount = $teams->filter(fn ($team) => $team->is_verified === 'rejected')->count();
     @endphp
 
     <div class="mb-6 grid gap-4 md:grid-cols-3">
@@ -71,7 +71,7 @@
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse ($teams as $team)
                         @php
-                            $status = $team->is_verified ? 'accepted' : (filled($team->verification_error) ? 'rejected' : 'pending');
+                            $status = $team->is_verified === 'approved' ? 'accepted' : ($team->is_verified === 'rejected' ? 'rejected' : 'pending');
                         @endphp
 
                         <tr>
@@ -102,7 +102,7 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex justify-end gap-2">
-                                    @if(!$team->is_verified)
+                                    @if($team->is_verified !== 'approved')
                                         <form method="POST" action="{{ route('admin.transactions.accept', $team) }}">
                                             @csrf
                                             @method('PATCH')

@@ -30,6 +30,8 @@ class Event extends Model
         'max_noncompetition_participant',
         'price',
         'requires_submission',
+        'whatsapp_group_link',
+        'logo_url',
     ];
 
     protected $casts = [
