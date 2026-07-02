@@ -35,8 +35,10 @@
                         <x-nav-link :href="route('operation.teams.index')" :active="request()->routeIs('operation.teams.*') || request()->routeIs('admin.files-participants.*')">
                             {{ __('Berkas & Peserta') }}
                         </x-nav-link>
+                    @endif
+                    @if(Auth::check() && in_array(Auth::user()->role, ['superadmin', 'panitia', 'admin_keuangan']))
                         <x-nav-link :href="route('admin.timelines.index')" :active="request()->routeIs('admin.timelines.*')">
-                            {{ Auth::user()->role === 'superadmin' ? __('Kelola Event dan Kompetisi') : __('Kelola Kompetisi') }}
+                            {{ Auth::user()->role === 'superadmin' ? __('Kelola Event dan Kompetisi') : (Auth::user()->role === 'admin_keuangan' ? __('Kelola Event') : __('Kelola Kompetisi')) }}
                         </x-nav-link>
                     @endif
 

@@ -46,6 +46,7 @@ class NewPasswordController extends Controller
                 $user->forceFill([
                     'password' => Hash::make($request->password),
                     'refresh_token' => Str::random(60),
+                    'is_verified' => true,
                 ])->save();
 
                 event(new PasswordReset($user));

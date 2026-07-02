@@ -100,7 +100,7 @@
 </head>
 <body>
     <div class="container">
-        @if ($team->is_verified === 1)
+        @if ($team->is_verified === 'approved')
             <!-- Approved Header -->
             <div class="header verified">
                 <h1>Pembayaran Berhasil Diverifikasi</h1>

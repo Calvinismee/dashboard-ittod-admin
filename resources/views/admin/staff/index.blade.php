@@ -186,28 +186,12 @@
                 </label>
 
                 <label class="block">
-                    <span class="text-sm font-semibold text-gray-700">Password</span>
-                    <input type="password" name="password" required class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
-                </label>
-
-                <label class="block">
-                    <span class="text-sm font-semibold text-gray-700">Konfirmasi Password</span>
-                    <input type="password" name="password_confirmation" required class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
-                </label>
-
-                <label class="block">
                     <span class="text-sm font-semibold text-gray-700">Role</span>
                     <select name="role" x-model="createRole" required class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
                         @foreach ($roleLabels as $value => $label)
                             <option value="{{ $value }}" @selected(old('role') === $value)>{{ $label }}</option>
                         @endforeach
                     </select>
-                </label>
-
-                <label class="flex items-center gap-3 rounded-md border border-gray-200 px-3 py-3">
-                    <input type="hidden" name="is_verified" value="0">
-                    <input type="checkbox" name="is_verified" value="1" checked class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
-                    <span class="text-sm font-semibold text-gray-700">Aktif dan bisa login</span>
                 </label>
             </div>
 
@@ -217,7 +201,7 @@
                     <div class="mt-2 grid gap-2 sm:grid-cols-2">
                         @forelse ($events as $event)
                             <label class="flex items-center gap-3 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700">
-                                <input type="checkbox" name="event_ids[]" value="{{ $event->id }}" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                <input type="radio" name="event_ids[]" value="{{ $event->id }}" class="border-gray-300 text-emerald-600 focus:ring-emerald-500">
                                 <span>{{ $event->title }}</span>
                             </label>
                         @empty
@@ -259,16 +243,6 @@
                 </label>
 
                 <label class="block">
-                    <span class="text-sm font-semibold text-gray-700">Password Baru</span>
-                    <input type="password" name="password" x-model="form.password" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
-                </label>
-
-                <label class="block">
-                    <span class="text-sm font-semibold text-gray-700">Konfirmasi Password Baru</span>
-                    <input type="password" name="password_confirmation" x-model="form.password_confirmation" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
-                </label>
-
-                <label class="block">
                     <span class="text-sm font-semibold text-gray-700">Role</span>
                     <select name="role" x-model="form.role" required class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
                         @foreach ($roleLabels as $value => $label)
@@ -291,11 +265,11 @@
                         @forelse ($events as $event)
                             <label class="flex items-center gap-3 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700">
                                 <input
-                                    type="checkbox"
+                                    type="radio"
                                     name="event_ids[]"
                                     value="{{ $event->id }}"
                                     x-model="form.event_ids"
-                                    class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                    class="border-gray-300 text-emerald-600 focus:ring-emerald-500"
                                 >
                                 <span>{{ $event->title }}</span>
                             </label>
