@@ -24,7 +24,7 @@ Modul utama:
 | UC-02 Verifikasi Pembayaran Tim | Ya | Ya | Tidak |
 | UC-03 Lihat Rekap Transaksi | Ya | Ya | Tidak |
 | UC-04 Kelola Data & Berkas Tim | Ya | Tidak | Ya |
-| UC-05 Kelola Lini Masa Kompetisi | Ya | Ya | Ya |
+| UC-05 Kelola Lini Masa & Event | Ya | Ya | Ya |
 | UC-06 Publish Pengumuman Dashboard | Ya | Ya | Ya |
 | UC-07 Ekspor Rekapitulasi Data CSV | Ya | Ya | Ya |
 | UC-08 Input Alasan Penolakan | Ya | Ya untuk transaksi, Panitia untuk berkas | Ya untuk berkas |
@@ -85,6 +85,7 @@ Pembatasan akses penting:
 - `staff()`, `storeStaff()`, `showStaff()`, `updateStaff()`, `destroyStaff()` hanya untuk superadmin.
 - `transactions()`, `acceptTransaction()`, `rejectTransaction()` hanya untuk superadmin dan admin keuangan.
 - `filesParticipants()`, `files()` hanya untuk superadmin dan panitia.
+- `storeCompetition()`, `updateCompetition()`, `destroyCompetition()`, `toggleCompetitionStatus()` dapat diakses superadmin (seluruh event) dan admin keuangan (hanya event `non_competition`).
 - `announcements()`, `storeAnnouncement()`, `updateAnnouncement()`, `destroyAnnouncement()` untuk semua staff, dengan panitia dibatasi hanya event yang ditugaskan. Pengumuman "Umum" (event_id null) hanya bisa dibuat oleh superadmin dan admin keuangan.
 
 ### `Operation\TeamController`
@@ -180,6 +181,13 @@ Relasi:
 - `participants()`
 - `staff()`
 
+Field penting:
+
+- `logo_url`: URL gambar logo event (disimpan di S3/R2).
+- `whatsapp_group_link`: Tautan grup WhatsApp untuk peserta.
+- `contact_person1`: Nomor CP 1 (disimpan dalam format angka saja).
+- `contact_person2`: Nomor CP 2 (disimpan dalam format angka saja).
+
 ### `Team`
 
 Tabel: `team`
@@ -232,8 +240,9 @@ Halaman: `/admin/staff`
 
 Fitur:
 
-- Superadmin dapat membuat staff baru.
-- Superadmin dapat mengedit staff.
+- Superadmin dapat membuat staff baru tanpa mengatur password. Sistem secara otomatis mengirimkan email berisi link pembuatan password.
+- Akun staff baru (admin/panitia) secara default tidak aktif (`is_verified = false`). Akun otomatis menjadi aktif setelah staff mengatur password mereka sendiri via email.
+- Superadmin dapat mengedit detail staff.
 - Superadmin dapat menghapus staff, kecuali akun sendiri.
 - Minimal harus ada satu superadmin.
 - Edit staff melakukan fetch detail terbaru melalui `GET /admin/staff/{staff}` sebelum modal dibuka.
@@ -259,9 +268,10 @@ Halaman:
 
 Fitur:
 
-- Superadmin dapat mengelola master kompetisi.
-- Superadmin dan panitia dapat mengelola agenda timeline kompetisi.
-- Panitia hanya dapat mengelola agenda pada kompetisi yang ditugaskan.
+- Superadmin dapat mengelola seluruh event dan kompetisi.
+- Admin Keuangan dapat mengelola khusus event `non_competition`.
+- Superadmin, Admin Keuangan, dan Panitia dapat mengelola agenda timeline kegiatan sesuai wewenang.
+- Panitia hanya dapat mengelola agenda pada kompetisi atau event yang ditugaskan kepadanya.
 
 ## Data Dan Berkas Tim
 
@@ -373,5 +383,6 @@ Validasi role saat ini dilakukan terutama di controller:
 ## Catatan Teknis
 
 - `bootstrap/app.php` baru mendaftarkan middleware `data_frozen`. Role guard belum dibuat sebagai middleware reusable, sehingga pembatasan role masih tersebar di controller.
+- **Penyimpanan Berkas (Storage):** Secara default logo event dan berkas-berkas penting disimpan ke S3/Cloudflare R2 jika diatur (saat production). Namun untuk menghindari error 500 saat mode lokal, sistem mendeteksi `config('filesystems.default') === 'local'` dan akan fallback secara otomatis untuk menggunakan disk `public`.
 - PHPUnit di environment ini belum bisa dijalankan penuh karena driver SQLite tidak tersedia.
 - Route cache dan Blade cache perlu dibersihkan setelah perubahan UI/route: `php artisan route:clear`, `php artisan view:clear`.
