@@ -95,7 +95,7 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Nama Tim / Kode</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Pendaftaran</th>
                         <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Cabang Lomba</th>
                         <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Ketua & Anggota</th>
                         <th class="px-6 py-3 text-left text-xs font-bold uppercase text-gray-600">Status</th>
@@ -106,6 +106,12 @@
                     @forelse($teams as $team)
                         @php
                             $isTeamVerified = $team->is_document_verified === 'approved';
+                            $isIndividual = $team->event?->participation_type === 'individual';
+                            $primaryMember = $team->members->firstWhere('role', 'leader') ?? $team->members->first();
+                            $displayName = $isIndividual
+                                ? ($primaryMember?->user?->full_name ?? 'Peserta')
+                                : $team->team_name;
+                            $individualCode = Str::upper(Str::substr(str_replace('-', '', $team->id), 0, 8));
                             $hasTeamErr = !empty($team->verification_error);
                             $hasMemErr = $team->members->contains(fn($m) => !empty($m->verification_error));
 
@@ -122,12 +128,14 @@
                         @endphp
                         <tr
                             x-show="$el.dataset.search.includes(search.toLowerCase())"
-                            data-search="{{ Str::lower($team->team_name . ' ' . $team->team_code . ' ' . ($team->event->title ?? $team->competition_id) . ' ' . $team->members->map(fn ($member) => ($member->user->full_name ?? 'Peserta') . ' ' . $member->role)->join(' ') . ' ' . $statusLabel) }}"
+                            data-search="{{ Str::lower($displayName . ' ' . ($isIndividual ? '' : $team->team_code) . ' ' . ($team->event->title ?? $team->competition_id) . ' ' . $team->members->map(fn ($member) => ($member->user->full_name ?? 'Peserta') . ' ' . $member->role)->join(' ') . ' ' . $statusLabel) }}"
                             class="hover:bg-gray-50"
                         >
                             <td class="px-6 py-4">
-                                <p class="font-semibold text-gray-950">{{ $team->team_name }}</p>
-                                <p class="mt-1 text-xs text-gray-500">Kode: {{ $team->team_code }}</p>
+                                <p class="font-semibold text-gray-950">{{ $displayName }}</p>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    {{ $isIndividual ? 'Individu · ID: ' . $individualCode : 'Kode: ' . $team->team_code }}
+                                </p>
                             </td>
                             <td class="px-6 py-4">
                                 <span class="inline-flex rounded border border-indigo-100 bg-indigo-50 px-2 py-1 text-[11px] font-bold uppercase text-indigo-700">
@@ -139,7 +147,7 @@
                                     @foreach($team->members as $member)
                                         <div class="flex items-center gap-2 text-sm text-gray-700">
                                             <span class="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase {{ $member->role === 'leader' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-500' }}">
-                                                {{ $member->role === 'leader' ? 'Ketua' : 'Anggota' }}
+                                                {{ $isIndividual ? 'Peserta' : ($member->role === 'leader' ? 'Ketua' : 'Anggota') }}
                                             </span>
                                             <span>{{ $member->user->full_name ?? 'Peserta' }}</span>
                                         </div>
@@ -152,7 +160,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <a href="{{ route('operation.teams.show', $team->id) }}" class="inline-flex items-center justify-center rounded-md bg-gray-950 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+                                <a href="{{ route('operation.teams.show', $team->id) }}" class="inline-flex items-center justify-center rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-bold uppercase text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                     Periksa Berkas
                                 </a>
                             </td>

@@ -66,10 +66,16 @@ class TeamController extends Controller
             }
         }
 
-        $team->update([
+        $teamUpdates = [
             'is_document_verified' => $request->is_document_verified,
             'verification_error' => $request->is_document_verified === 'rejected' ? $request->verification_error : null
-        ]);
+        ];
+
+        if ($request->is_document_verified === 'approved') {
+            $teamUpdates['is_verified'] = 'pending';
+        }
+
+        $team->update($teamUpdates);
 
         return redirect()
             ->route('operation.teams.index')

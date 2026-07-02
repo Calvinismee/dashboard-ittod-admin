@@ -255,7 +255,7 @@ class AdminDashboardController extends Controller
     public function transactions(\Illuminate\Http\Request $request): View
     {
         abort_unless(in_array(auth()->user()?->role, ['superadmin', 'admin_keuangan']), 403);
-        $query = Team::with(['event', 'paymentProof', 'members'])
+        $query = Team::with(['event', 'paymentProof', 'members.user'])
             ->where('is_document_verified', 'approved');
 
         $filterStatus = $request->input('status', 'pending');

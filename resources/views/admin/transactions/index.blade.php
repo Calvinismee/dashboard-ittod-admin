@@ -61,7 +61,7 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">Tim</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">Pendaftaran</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">Kompetisi</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">Bukti Transfer</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">Status</th>
@@ -72,12 +72,22 @@
                     @forelse ($teams as $team)
                         @php
                             $status = $team->is_verified === 'approved' ? 'accepted' : ($team->is_verified === 'rejected' ? 'rejected' : 'pending');
+                            $isIndividual = $team->event?->participation_type === 'individual';
+                            $primaryMember = $team->members->firstWhere('role', 'leader') ?? $team->members->first();
+                            $displayName = $isIndividual
+                                ? ($primaryMember?->user?->full_name ?? 'Peserta')
+                                : $team->team_name;
+                            $individualCode = Str::upper(Str::substr(str_replace('-', '', $team->id), 0, 8));
                         @endphp
 
                         <tr>
                             <td class="px-6 py-4">
-                                <p class="font-semibold text-gray-950">{{ $team->team_name }}</p>
+                                <p class="font-semibold text-gray-950">{{ $displayName }}</p>
+                                @if($isIndividual)
+                                    <p class="text-sm text-gray-600">Individu · ID: {{ $individualCode }}</p>
+                                @else
                                 <p class="text-sm text-gray-600">{{ $team->team_code }} · {{ $team->members->count() }} anggota</p>
+                                @endif
                                 @if ($team->verification_error)
                                     <p class="mt-2 max-w-md text-sm text-rose-700">Alasan: {{ $team->verification_error }}</p>
                                 @endif
@@ -114,7 +124,7 @@
                                         <button
                                             type="button"
                                             class="rounded-md bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-500"
-                                            x-on:click="openReject(@js($team->team_name), @js(route('admin.transactions.reject', $team)))"
+                                            x-on:click="openReject(@js($displayName), @js(route('admin.transactions.reject', $team)))"
                                         >
                                             Reject
                                         </button>

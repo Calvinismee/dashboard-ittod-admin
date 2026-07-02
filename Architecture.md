@@ -223,6 +223,7 @@ Relasi:
 Field penting:
 
 - `role`
+- `is_verified`: Status verifikasi dokumen anggota secara individual.
 - `verification_error`
 - `kartu_id`
 
@@ -310,6 +311,9 @@ Endpoint JSON & Verifikasi:
 Fitur:
 
 - Superadmin dan admin keuangan dapat memverifikasi pembayaran.
+- Tim baru masuk ke antrean transaksi dengan status `pending` setelah seluruh
+  berkas tim disetujui. Penolakan berkas tidak boleh mengubah status transaksi
+  menjadi `rejected`.
 - Terdapat filter berdasarkan event dan status (Semua Status, Pending, Accepted, Rejected).
 - Status default pada view adalah Pending & Rejected.
 - Reject pembayaran membutuhkan alasan penolakan.
@@ -366,6 +370,12 @@ Interaksi frontend:
 
 - Alpine.js untuk modal, search table, fetch detail staff, dan validasi inline.
 - Tailwind CSS untuk styling.
+- Tombol `Periksa Berkas` pada tabel tim menggunakan badge biru agar mudah
+  dibedakan dari badge status verifikasi.
+- Pendaftaran kompetisi individu ditampilkan sebagai peserta pada daftar dan
+  detail verifikasi berkas maupun transaksi; nama tim serta kode gabung
+  internal tidak ditampilkan. ID pendaftaran versi pendek ditampilkan untuk
+  membedakan peserta yang memiliki nama sama.
 
 ## Validasi Dan Guard
 

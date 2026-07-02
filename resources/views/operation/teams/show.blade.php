@@ -1,6 +1,12 @@
+@php
+    $isIndividual = $team->event?->participation_type === 'individual';
+    $primaryMember = $team->members->firstWhere('role', 'leader') ?? $team->members->first();
+    $participantName = $primaryMember?->user?->full_name ?? 'Peserta';
+@endphp
+
 <x-admin.layout
-    title="Detail Tim: {{ $team->team_name }}"
-    subtitle="ID Tim: {{ $team->id }}"
+    title="{{ $isIndividual ? 'Detail Peserta: ' . $participantName : 'Detail Tim: ' . $team->team_name }}"
+    subtitle="{{ $isIndividual ? 'ID Pendaftaran' : 'ID Tim' }}: {{ $team->id }}"
 >
     @if(session('success'))
         <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
@@ -112,7 +118,9 @@
                             @endphp
                             <div class="flex flex-col gap-2 border-b border-gray-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div class="flex items-center gap-3">
-                                    @if($member->role === 'leader')
+                                    @if($isIndividual)
+                                        <span class="rounded-md bg-indigo-100 px-2 py-1 text-xs font-semibold uppercase text-indigo-800">Peserta</span>
+                                    @elseif($member->role === 'leader')
                                         <span class="rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold uppercase text-amber-800">Ketua</span>
                                     @else
                                         <span class="rounded-md bg-gray-100 px-2 py-1 text-xs font-semibold uppercase text-gray-600">Anggota</span>
@@ -285,23 +293,27 @@
 
         <aside class="space-y-6">
             <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                <h2 class="text-lg font-semibold text-gray-950">Informasi Tim</h2>
+                <h2 class="text-lg font-semibold text-gray-950">{{ $isIndividual ? 'Informasi Pendaftaran' : 'Informasi Tim' }}</h2>
                 <dl class="mt-5 space-y-4 text-sm">
                     <div class="flex justify-between gap-4">
-                        <dt class="text-gray-500">Nama Tim</dt>
-                        <dd class="text-right font-semibold text-gray-950">{{ $team->team_name }}</dd>
+                        <dt class="text-gray-500">{{ $isIndividual ? 'Nama Peserta' : 'Nama Tim' }}</dt>
+                        <dd class="text-right font-semibold text-gray-950">{{ $isIndividual ? $participantName : $team->team_name }}</dd>
                     </div>
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-gray-500">Kode Lomba</dt>
-                        <dd class="rounded bg-gray-100 px-2 py-0.5 font-mono text-xs font-semibold text-gray-700">{{ $team->team_code }}</dd>
-                    </div>
+                    @unless($isIndividual)
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-gray-500">Kode Lomba</dt>
+                            <dd class="rounded bg-gray-100 px-2 py-0.5 font-mono text-xs font-semibold text-gray-700">{{ $team->team_code }}</dd>
+                        </div>
+                    @endunless
                     <div class="flex justify-between gap-4">
                         <dt class="text-gray-500">Cabang Lomba</dt>
                         <dd class="text-right font-semibold text-gray-950">{{ $team->event->title ?? $team->competition_id }}</dd>
                     </div>
                     <div class="flex justify-between gap-4">
-                        <dt class="text-gray-500">Kapasitas</dt>
-                        <dd class="font-semibold text-gray-950">{{ $team->members->count() }} / {{ $team->max_member }} Anggota</dd>
+                        <dt class="text-gray-500">{{ $isIndividual ? 'Tipe' : 'Kapasitas' }}</dt>
+                        <dd class="font-semibold text-gray-950">
+                            {{ $isIndividual ? 'Individu' : $team->members->count() . ' / ' . $team->max_member . ' Anggota' }}
+                        </dd>
                     </div>
                     <div class="flex justify-between gap-4">
                         <dt class="text-gray-500">Status Penguncian</dt>
